@@ -7,25 +7,46 @@ const labels = [
     'June',
 ];
 
-const data = {
-    labels: labels,
-    datasets: [{
-        label: 'My First dataset',
-        backgroundColor: 'rgb(255, 99, 132)',
-        borderColor: 'rgb(255, 99, 132)',
-        data: [0, 10, 5, 2, 20, 30, 45],
-    }]
-};
-
-const config = {
-    type: 'line',
-    data: data,
-    options: {}
-};
+var labelsTranslate = {
+    "cpu_Utilizacao": "Utilização Da CPU",
+    "cpu_Temperature": "Temperatura Da CPU",
+    "ram_Usada": "Utilização Da Memória Ram",
+    "disco_Usado": "Utilização Do Disco",
+}
 
 const myChart = new Chart(
     document.getElementById('myChart'),
-    config
+    {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Utilização Da CPU',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: [],
+            },
+            {
+                label: 'Temperatura Da CPU',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: [],
+            },
+            {
+                label: 'Utilização Da Memória Ram',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: [],
+            },
+            {
+                label: 'Utilização Do Disco',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: [],
+            },]
+        },
+        options: {}
+    }
 );
 
 function setDataPicker(dates) {
@@ -56,10 +77,41 @@ async function getDates() {
             "Content-Type": "application/json"
         }
     });
-    let keys = Object.keys(await res.json());
-    keys = keys.reverse()
+    res = await res.json();
+    let keys = Object.keys(res);
+    
     teste.innerHTML += "OK"
+    console.log(res)
     setDataPicker(keys)
+    appendChartData(res)
+}
+
+function findDataset(label, value) {
+    if (value == -500) value = 0;
+    for (let i = 0; i < myChart.data.datasets.length; i++) {
+        if (myChart.data.datasets[i].label == label) {
+            myChart.data.datasets[i].data.push(parseFloat(value.toFixed(2)))
+            myChart.update()
+        }
+    }
+}
+
+function appendChartData(data) {
+    let keys = Object.keys(data);
+    let metricas, value;
+    
+    for (let i = 0; i < keys.length; i++) {
+        metricas = data[keys[i]];
+        myChart.data.labels.push(keys[i])
+        
+        for (let metrica in metricas) {
+            value = metricas[metrica].mean;
+
+            findDataset(labelsTranslate[metrica], value)
+        }
+        myChart.update()
+    }
+    
 }
 
 getDates()

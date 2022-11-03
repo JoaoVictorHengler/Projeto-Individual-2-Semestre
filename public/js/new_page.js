@@ -51,11 +51,13 @@ const myChart = new Chart(
 
 function setDataPicker(dates) {
     let datepickers = ["#datepicker1", "#datepicker2"];
-
+    let datesSorted = dates
+    console.log(datesSorted)
+    datesSorted = datesSorted.sort()
     for (let i = 0; i < datepickers.length; i++) {
 
-        if (datepickers[i] == "#datepicker1") $(datepickers[i]).datepicker('update', dates[0]);
-        else $(datepickers[i]).datepicker('update', dates[dates.length - 1]);
+        if (datepickers[i] == "#datepicker1") $(datepickers[i]).datepicker('update', datesSorted[0]);
+        else $(datepickers[i]).datepicker('update', datesSorted[datesSorted.length - 1]);
 
         $(datepickers[i]).datepicker({
             multidate: true,

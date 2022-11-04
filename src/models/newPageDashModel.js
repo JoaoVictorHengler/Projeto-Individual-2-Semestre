@@ -49,7 +49,7 @@ async function separateDate(data, type = "date") {
     data = data.map(
         (item) => {
             let date = new Date(item.dataColeta);
-            if (type == "date") item.dataColeta = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+            if (type == "date") item.dataColeta = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
             else if (type == "time") item.dataColeta = `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
             else if (type == "month") item.dataColeta = `${date.getMonth() + 1}/${date.getFullYear()}`;
 

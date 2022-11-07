@@ -10,6 +10,21 @@ async function getDados(req, res) {
     res.json({"metricas": response});
 }
 
+async function getMeanHours(req, res) {
+    let fkMaquina = req.params.fkMaquina;
+    let fkEmpresa = req.params.fkEmpresa;
+    let metricas = await dashModel.getMetricas();
+    let response = {};
+    for (let i = 0; i < metricas.length; i++) {
+        if (metricas[i].nomeMetrica == "cpu_Utilizacao") {
+            let dateMetrica = await dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, metricas[i].nomeMetrica);
+            response[metricas[i].nomeMetrica] = dateMetrica;
+        }
+    }
+    res.json(response);
+
+}
+
 async function getDataDate(req, res) {
     let fkMaquina = req.params.fkMaquina;
     let fkEmpresa = req.params.fkEmpresa;
@@ -29,5 +44,6 @@ async function getDataDate(req, res) {
 
 module.exports = {
     getDados,
-    getDataDate
+    getDataDate,
+    getMeanHours
 }

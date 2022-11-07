@@ -85,10 +85,10 @@ function setDataPicker(data, dates) {
             return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
         }
     )
-    
+
     for (let i = 0; i < datepickers.length; i++) {
         let date = datesSorted[datesSorted.length - 1];
-        
+
         if (datepickers[i] == "#datepicker1") date = datesSorted[0];
 
         $(datepickers[i]).datepicker({
@@ -103,7 +103,7 @@ function setDataPicker(data, dates) {
         })
         $(datepickers[i]).datepicker("setDate", date);
     }
-    
+
     appendChartData(data, datesSorted)
 }
 
@@ -133,15 +133,20 @@ function findDataset(label, value) {
     }
 }
 
+function updateKey(data) {
+    for (let key in data) {
+        let newData = data[key];
+        let date = `${key.split("/")[1]}/${key.split("/")[0]}/${key.split("/")[2]}`;
+        data[date] = newData;
+        delete data[key];
+    }
+    return data;
+}
+
 function appendChartData(data, keys) {
     let metricas, value, date;
 
-    for (let key in data) {
-        let newData = data[key]
-        let date = `${key.split("/")[1]}/${key.split("/")[0]}/${key.split("/")[2]}`
-        data[date] = newData
-        delete data[key]
-    }
+    data = updateKey(data);
 
     for (let i = 0; i < keys.length; i++) {
         metricas = data[keys[i]];
@@ -154,46 +159,57 @@ function appendChartData(data, keys) {
         }
         myChart.update()
     }
-    if (keys.length < 2) return; 
 
-    let lastDate = myChart.data.labels[myChart.data.labels.length - 1];
-    let newDate = new Date(lastDate);
-    newDate.setDate(newDate.getDate() + 1);
-    newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}`
-    myChart.data.labels.push(newDate)
+    if (keys.length < 2) return;
 
-    for (let i = keys.length; i > keys.length - 2; i--) {
-        metricas = data[keys[i]];
+    data = updateKey(data);
 
+
+    for (let i = 0; i < 3; i++) {
+        let lastDate = myChart.data.labels[myChart.data.labels.length - 1];
+        let newDate = new Date(lastDate);
+        newDate.setDate(newDate.getDate() + 1);
+        newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}`;
+        myChart.data.labels.push(newDate);
         for (let metrica in metricas) {
-            createPredict(keys, data, metrica)
+            keys = createPredict(keys, data, metrica);
         }
     }
+
     myChart.update()
 
-    
+
 }
 
-function createPredict(keys, data, metrica) {
-    
-    keys = [keys[keys.length - 2], keys[keys.length -1]]
-    
+function createPredict(keys, data, metrica, i) {
+
+    lastKeys = [keys[keys.length - 2], keys[keys.length - 1]]
+
     let x1, x2, y1, y2;
     x1 = myChart.data.labels.length - 1;
     x2 = myChart.data.labels.length;
-    y1 = data[keys[0]][metrica].mean;
-    y2 = data[keys[1]][metrica].mean;
+    y1 = data[lastKeys[0]][metrica].mean;
+    y2 = data[lastKeys[1]][metrica].mean;
     let tanAngle = (y2 - y1) / (x2 - x1);
     console.log("x1: ", x1, "x2: ", x2, "y1: ", y1, "y2: ", y2, "tanAngle: ", tanAngle)
 
     x1 = myChart.data.labels.length;
     x2 = myChart.data.labels.length + 1;
-    y1 = data[keys[1]][metrica].mean;
+    y1 = data[lastKeys[1]][metrica].mean;
     let predict = (tanAngle * (x2 - x1)) + y1;
     console.log("x1: ", x1, "x2: ", x2, "y1: ", y1, "predict: ", predict)
     findDataset(labelsTranslate[metrica], predict);
 
-    console.log(predict)
+    let newDate = new Date(lastKeys[1]);
+    newDate.setDate(newDate.getDate() + 1);
+    newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}`
+
+
+
+    keys[newDate] = {};
+    keys[newDate][metrica] = {};
+    keys[newDate][metrica].mean = predict;
+    return keys
 }
 
 getDates()

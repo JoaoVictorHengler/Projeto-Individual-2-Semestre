@@ -6,6 +6,10 @@ var dashController = require("../controllers/newPageDashController");
 router.get("/getDataByDate/:fkMaquina&:fkEmpresa", function(req, res) {
     dashController.getDataDate(req, res)
 })
+
+router.get("/getInformationsByDateHour/:fkMaquina&:fkEmpresa", function(req, res) {
+    dashController.getMeanHours(req, res)
+})
 router.get("/teste/?msg=:msg", function(req, res) {
     res.json(
         {

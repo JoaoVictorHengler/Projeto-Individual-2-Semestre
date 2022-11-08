@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <title>Dashboard | Pardalis</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/dashboard/">
+    <!--Verificar se necessário-->
+    <link href="css/dashboard.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+
+    <!-- Custom styles for this template -->
+
+</head>
+
+<body>
+    <header class="sticky-top  d-flex m-0 p-0 vw-auto shadow d-flex justify-content-between">
+        <a class="navbar-brand px-2 fs-4 text-light" style="width: 15%;">Pardalis</a>
+        <input class="form-control form-control-dark w-50 rounded-0 border-0" type="text" placeholder="Setor"
+            aria-label="Setor">
+        <div class="navbar-nav w-auto">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3 text-light" href="#">Sair</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid row m-0 p-0">
+        <!-- Navbar lateral -->
+        <nav id="sidebarMenu" class="p-0 d-md-block bg-light collapse" style="width: 15%;">
+            <div class="p-2 sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <p class="h5 text-muted fw-bolder">Dashboards</p>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active h6 p-2 m-0" style="width: fit-content;"
+                            href="./dashboard.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active h6 p-2 m-0 fw-bold" style="width: fit-content;">
+                            Dados Gerais</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active h6 p-2 m-0" style="width: fit-content;"
+                            href="./server-analysys.html">Análise de dados</a>
+                    </li>
+                </ul>
+                <ul class="nav flex-column mt-2">
+                    <li class="nav-item">
+                        <p class="h5 text-muted fw-bolder">Usuários</p>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active h6 p-2 m-0" style="width: fit-content;" href="">Verificar Usuários</a>
+                    </li>
+                </ul>
+                <ul class="nav flex-column mt-2">
+                    <li class="nav-item">
+                        <p class="h5 text-muted fw-bolder">Conta</p>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active h6 p-2 m-0" style="width: fit-content;" href="">Editar Conta</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="center flex-column" style="width: 85%; ">
+            <div class="center">
+                <div class="display-4"> Dados operacionais</div>
+            </div>
+            <div class="center-row  box-general justify-content-between">
+                <div class="card bg-dark cards-general-data mt-4 p-4 d-flex  flex-column">
+
+                    <div class="txt-kpi-general fw-bolder text-white">Qtd de Servers</div>
+                    <div class="warning">
+                        <div class="display-6 text-white">
+                            25
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-dark  cards-general-data mt-4 p-4 d-flex flex-column">
+
+                    <div class="txt-kpi-general fw-bolder text-white">Server em risco</div>
+                    <div class="display-6 text-white  ">
+                        25
+                    </div>
+
+                </div>
+                <div class="card  bg-dark  cards-general-data mt-4 p-4 d-flex flex-column">
+
+
+                    <div class="txt-kpi-general fw-bolder text-white">Server em risco/mês</div>
+                    <div class="display-6 text-white">
+                        25
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="center-row box-general justify-content-evenly" style="width:90%;">
+                <div class="card cards-general-data mt-4 p-4 d-flex flex-column"
+                    style="height: fit-content; width: 45%; ">
+                    <div class="h2">Servers em risco</div>
+                    <p class="lead small-font">Ideais / Risco / Alerta
+                    </p>
+                    <div class="box-minichart-general"> <canvas id="chart-risk-server"></canvas></div>
+                    <hr>
+
+                </div>
+
+                <div class="card cards-general-data mt-4 p-4 d-flex flex-column"
+                    style="height: fit-content; width: 45%; ">
+                    <div class="h2">Sistema operacional </div>
+                    <p class="lead small-font">Gráfico de barra (linux / mac / windows )
+                    </p>
+                    <div class="box-minichart-general"> <canvas id="chart-so"></canvas> </div>
+                    <hr>
+
+                </div>
+
+            </div>
+
+            <div class="center box-general justify-content-evenly flex-column" style="width:90%;">
+                <div class="display-6">Avg / Date</div>
+                <div class="small-font" id="component-per-date">
+                    Componente - Data
+                </div>
+                <div class="box-mensal-chart">
+                    <canvas id="chart-dynamic" class="chart"></canvas>
+                </div>
+                <div class="center">
+                    <div class="center justify-content-between " style=" width: 45rem;">
+                        <div class="card d-flex  flex-md-row">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="anoCheckBox">
+                                <label class="form-check-label h4" for="flexCheckDefault">
+                                    <div class="small-font">Ano</div>
+                                </label>
+
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="mesCheckBox">
+                                <label class="form-check-label h4" for="flexCheckDefault">
+                                    <div class="small-font">Mês</div>
+                                </label>
+
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="semanaCheckBox">
+                                <label class="form-check-label h4" for="flexCheckDefault">
+                                    <div class="small-font">Semana</div>
+                                </label>
+
+                            </div>
+
+                        </div>
+                        <div class="card d-flex flex-md-row">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="cpuCheckBox">
+                                <label class="form-check-label h4" for="flexCheckDefault">
+                                    <div class="small-font">CPU</div>
+                                </label>
+
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="ramCheckBox">
+                                <label class="form-check-label h4" for="flexCheckDefault">
+                                    <div class="small-font">RAM</div>
+                                </label>
+
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="discoCheckBox">
+                                <label class="form-check-label h4" for="flexCheckDefault">
+                                    <div class="small-font">DISCO</div>
+                                </label>
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+            </div>
+
+
+            <div class="center-row">
+
+            </div>
+
+        </div>
+    </div>
+    </div>
+
+
+
+    </div>
+    </div>
+
+    <!--Verificar se necessário-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js"
+        integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"
+        integrity="sha384-zNy6FEbO50N+Cg5wap8IKA4M/ZnLJgzc6w2NqACZaK0u0FXfOWRRJOnQtpZun8ha"
+        crossorigin="anonymous"></script>
+    <script src="./js/dados-gerais.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.5/dist/umd/popper.min.js"
+        integrity="sha384-Xe+8cL9oJa6tN/veChSP7q+mnSPaj5Bcu9mPX5F5xIGE0DVittaqT5lorf0EI7Vk"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.min.js"
+        integrity="sha384-ODmDIVzN+pFdexxHEHFBQH3/9/vQ9uori45z4JjnFsRydbmQbmL5t1tQ0culUzyK"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

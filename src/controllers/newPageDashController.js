@@ -16,10 +16,11 @@ async function getMeanHours(req, res) {
     let metricas = await dashModel.getMetricas();
     let response = {};
     for (let i = 0; i < metricas.length; i++) {
-        if (metricas[i].nomeMetrica == "cpu_Utilizacao") {
+        if (metricas[i].isEstatico == 0) {
             let dateMetrica = await dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, metricas[i].nomeMetrica);
             response[metricas[i].nomeMetrica] = dateMetrica;
         }
+        
     }
     res.json(response);
 

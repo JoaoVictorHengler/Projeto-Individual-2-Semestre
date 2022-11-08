@@ -71,22 +71,24 @@ var myChart = new Chart(
     }
 );
 
-function setDataPicker(data, dates) {
+function setDataPicker(data) {
     let datepickers = ["#datepicker1", "#datepicker2"];
-    let datesSorted = dates
 
-    datesSorted = datesSorted.sort((a, b) => {
-        return new Date(a) - new Date(b);
-    })
+    for (let metrica in data) {
+        dict = data[metrica];
+        keys = Object.keys(dict);
+        keys = keys.sort((a, b) => {
+            return new Date(a) - new Date(b);
+        });
+        keys = keys.map(
+            (date) => {
+                date = new Date(date)
+                return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+            }
+        )
+    }
 
-    datesSorted = datesSorted.map(
-        (date) => {
-            date = new Date(date)
-            return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
-        }
-    )
-
-    for (let i = 0; i < datepickers.length; i++) {
+    /* for (let i = 0; i < datepickers.length; i++) {
         let date = datesSorted[datesSorted.length - 1];
 
         if (datepickers[i] == "#datepicker1") date = datesSorted[0];
@@ -102,13 +104,13 @@ function setDataPicker(data, dates) {
             }
         })
         $(datepickers[i]).datepicker("setDate", date);
-    }
+    } */
 
     appendChartData(data, datesSorted)
 }
 
 async function getDates() {
-    let res = await fetch("/npd/getDataByDate/1&1", {
+    let res = await fetch("/npd/getInformationsByDateHour/1&1", {
         method: "GET",
         headers: {
             "Content-Type": "application/json"

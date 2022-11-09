@@ -74,12 +74,17 @@ var myChart = new Chart(
 function transformData(data) {
     let newData = {};
     for (let metrica in data) {
+        for (let day in data[metrica]) {
+            
+        }
+    }
+        /* let dayKeys = Object.keys(data[metrica]);
         dayKeys = dayKeys.map(
             (date) => {
                 date = new Date(date)
                 return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
             }
-        )
+        );
         
         dayKeys =  Object.keys(data[metrica]).sort((a, b) => {
             a = `${a.split("/")[1]}/${a.split("/")[0]}/${a.split("/")[2]}`;
@@ -114,29 +119,13 @@ function transformData(data) {
             }
         )   
 
-        console.log("Sorteado correto: " + dayKeysSorted)
-        appendChartData(newData, dayKeysSorted)
-    }    
+        console.log("Sorteado correto: " + dayKeys)
+        appendChartData(newData, dayKeys) */
     
     
+    
 
-    /* for (let i = 0; i < datepickers.length; i++) {
-        let date = datesSorted[datesSorted.length - 1];
-
-        if (datepickers[i] == "#datepicker1") date = datesSorted[0];
-
-        $(datepickers[i]).datepicker({
-            multidate: false,
-            format: 'dd/mm/yyyy',
-            language: "pt-BR",
-            beforeShowDay: (date) => {
-                let dmy = date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear();
-                if (datesSorted.indexOf(dmy) != -1) return true;
-                else return false;
-            }
-        })
-        $(datepickers[i]).datepicker("setDate", date);
-    } */
+    
 
     
 }
@@ -252,3 +241,22 @@ getDates()
     values: [2008, 2009, 2010, 2011],
     range: true // range slider
 }); */
+
+/* Datepicker */
+/* for (let i = 0; i < datepickers.length; i++) {
+        let date = datesSorted[datesSorted.length - 1];
+
+        if (datepickers[i] == "#datepicker1") date = datesSorted[0];
+
+        $(datepickers[i]).datepicker({
+            multidate: false,
+            format: 'dd/mm/yyyy',
+            language: "pt-BR",
+            beforeShowDay: (date) => {
+                let dmy = date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear();
+                if (datesSorted.indexOf(dmy) != -1) return true;
+                else return false;
+            }
+        })
+        $(datepickers[i]).datepicker("setDate", date);
+    } */

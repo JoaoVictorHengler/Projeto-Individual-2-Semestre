@@ -1,11 +1,12 @@
 var dashModel = require("../models/newPageDashModel")
+var dashModel2 = require("../models/dashModel")
 
 async function getDados(req, res) {
     let fkEmpresa = req.body.fkEmpresa;
     let fkMaquina = req.body.fkMaquina;
     let nomeMetrica = req.body.nomeMetrica;
     
-    let maquinaInfo = await dashModel.getMaquinaInfo(fkEmpresa, fkMaquina);
+    let maquinaInfo = await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina);
     let response = await dashModel.getDados(maquinaInfo[0].nomeEmpresa, maquinaInfo[0].nomeMaquina, nomeMetrica);
     res.json({"metricas": response});
 }
@@ -15,15 +16,19 @@ async function getMeanHours(req, res) {
     let fkEmpresa = req.params.fkEmpresa;
     let metricas = await dashModel.getMetricas();
     let allPromises = [];
+    let machine = await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina);
     for (let i = 0; i < metricas.length; i++) {
         if (metricas[i].isEstatico == 0) {
-
+            if (machine[0].sistemaOperacional == "Windows" && metricas[i].nomeMetrica == "cpu_Temperature") continue; 
+            
             let dateMetrica = dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, metricas[i].nomeMetrica);
             allPromises.push(dateMetrica);
+            console.log("Promessa Iniciada...")
         }
     }
     
     Promise.all(allPromises).then((values) => {
+        console.log("Promessas Concluídas!")
         let response = {};
         for (let i = 0; i < values.length; i++) {
             response[values[i].metrica] = values[i].data;

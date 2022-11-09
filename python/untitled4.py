@@ -1,15 +1,10 @@
-import numpy, pandas, statistics
+import numpy, pandas, json
 from datetime import datetime
-
-dataset = pandas.read_csv("./Utilizacao_Cpu.csv", sep=";")
-dataset
-
-dataset = dataset.to_dict("records")
 
 def get_mean(data):
   mean = 0
   for i in range(len(data)):
-    mean += data[i]["valorLeitura"]
+    mean += data[i]
   mean /= len(data)
   return mean
 
@@ -21,60 +16,71 @@ def get_date(date):
   hour = date[-1]
   date.pop()
   date = date + hour.split(":")
-  return date
-
-def filter2(data, last_time, atual_time):
-  new_data = []
-  for i in range(len(data)):
-    if (atual_time.hour == last_time.hour and atual_time.minute == last_time.minute):
-      new_data.append(data[i])
-  return new_data
-
-def filter_minutes_and_hours(last_time, atual_time):
-  if (itemDate.hour == lastItemDate.hour and itemDate.minute == lastItemDate.minute):
-    return True
-  else:
-    return False
-
-newData = []
-data = dataset
-
-print(data)
-for i in range(len(data)):
-  date = get_date(data[i]["dataColeta"])
   date = [int(x) for x in date] 
-  itemDate = datetime(date[0], date[1], date[2], date[3], date[4], date[5])
-  item = data[i]
+
+  return datetime(date[0], date[1], date[2], date[3], date[4], date[5])
+
+def get_dataset():
+  dataset = pandas.read_csv("./Utilizacao_Cpu.csv", sep=";")
+  return dataset.to_dict("records")
+
+def get_hours_mean(data, i):
+  item_date = get_date(data[i]["dataColeta"])
 
   if i >= 1:
-    date = get_date(data[i - 1]["dataColeta"])
-    date = [int(x) for x in date] 
+    last_item_date = get_date(data[i - 1]["dataColeta"])
 
-    lastItemDate = datetime(date[0], date[1], date[2], date[3], date[4], date[5])
-    if itemDate.hour == lastItemDate.hour and itemDate.minute == lastItemDate.minute:
-        continue
+    if item_date.hour != last_item_date.hour or item_date.minute != last_item_date.minute:
+        return list(filter(lambda x: ((get_date(x["dataColeta"]).hour == item_date.hour and get_date(x["dataColeta"]).minute == item_date.minute)), data))
+
+def get_value(data):
+  all_values = []
+  for i in range(len(data)):
+    all_values.append(data[i]["valorLeitura"])  
+  return get_mean(all_values)
   
-  item_filtered = filter(filter_minutes_and_hours, )
-  print(item_filtered)
-  item_filtered_mean = get_mean(item_filtered)
 
-  hour = str(itemDate.hour)
-  if len(str(itemDate.hour)) == 1:
-    hour = "0" + str(itemDate.hour)
+data = get_dataset()
+all_data_finished = {}
+for i in range(len(data)):
+  item = data[i]
 
-  minute = str(itemDate.minute)
-  if len(str(itemDate.minute)) == 1:
-    minute = "0" + str(itemDate.minute)
+  item_filtered_mean = get_hours_mean(data, i)
+  
+  if (item_filtered_mean != None):
+      mean = get_value(item_filtered_mean)
+      date = get_date(item["dataColeta"])
+      date = date.timestamp()
+      # date = 
+      all_data_finished[date] = round(mean, 3)
+  print("Item: ", i, " de ", len(data))
+
+
+new_all_data_finished = {}
+for i in sorted(all_data_finished.keys()):
+  date = datetime.fromtimestamp(int(i))
+  new_all_data_finished[date.strftime("%d/%m/%Y %H:%M:%S")] = all_data_finished[i]
+
+with open("result.json", "w") as file:
+  file.write(json.dumps(new_all_data_finished))
+
+""" hour = str(item_date.hour)
+  if len(str(item_date.hour)) == 1:
+    hour = "0" + str(item_date.hour)
+
+  minute = str(item_date.minute)
+  if len(str(item_date.minute)) == 1:
+    minute = "0" + str(item_date.minute)
 
   newData.append({
                 "nomeMaquina": item["nomeMaquina"],
                 "nomeComponente": item["nomeComponente"],
                 "nomeMetrica": item["nomeMetrica"],
                 "unidadeDeMedida": item["unidadeDeMedida"],
-                "dataColeta": str(itemDate.year) + "-" + str(itemDate.month + 1) + "-" + str(itemDate.day),
+                "dataColeta": str(item_date.year) + "-" + str(item_date.month + 1) + "-" + str(item_date.day),
                 "horaColeta": hour + ":" + minute + ":00",
                 "valorLeitura": data[i]["valorLeitura"]
-            })
+            }) """
 
 """ x = []
 y = []

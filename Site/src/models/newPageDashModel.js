@@ -106,7 +106,7 @@ async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, nomeMetrica) {
     let machine = await getMaquinaInfo(fkEmpresa, fkMaquina);
     let data = await getView(machine[0].nomeEmpresa, machine[0].nomeMaquina, nomeMetrica, true, false);
     data = await reduceSeconds(data);
-    
+    console.log("Promessa Concluída")
     return {
         metrica: nomeMetrica,
         data: data

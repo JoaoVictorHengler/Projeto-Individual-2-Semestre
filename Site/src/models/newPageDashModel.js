@@ -147,7 +147,7 @@ function reduceSeconds(data) {
 
         });
     
-    return  appendMean(joinHours(getDataByHour(newData)));
+    return  appendMean(/* joinHours */(getDataByHour(newData)));
 }
 
 function getMathInformationsEnhanced(data) {
@@ -177,7 +177,7 @@ function appendMean(data) {
         let hoursKeys = Object.keys(data[keys[i]]);
         for (let j = 0; j < hoursKeys.length; j++) {
             newKey = {};
-            newKey.allData = data[keys[i]][hoursKeys[j]];
+            /* newKey.allData = data[keys[i]][hoursKeys[j]]; */
             newKey.math = getMathInformationsEnhanced(data[keys[i]][hoursKeys[j]]);
 
             data[keys[i]][hoursKeys[j]] = newKey;

@@ -72,62 +72,21 @@ var myChart = new Chart(
 );
 
 function transformData(data) {
-    let newData = {};
     for (let metrica in data) {
         for (let day in data[metrica]) {
+            new_day = `${day.split("/")[1]}/${day.split("/")[0]}/${day.split("/")[2]}`;
+            for (let hour in data[metrica][day]) {
+                if (myChart.data.labels.indexOf(`${new_day}-${hour}h`) == -1) {
+                    myChart.data.labels.push(`${new_day}-${hour}h`);
+                }
+                findDataset(labelsTranslate[metrica])
+                appendChartData(data[metrica][day][hour], metrica)
+            }
             
         }
     }
-        /* let dayKeys = Object.keys(data[metrica]);
-        dayKeys = dayKeys.map(
-            (date) => {
-                date = new Date(date)
-                return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
-            }
-        );
-        
-        dayKeys =  Object.keys(data[metrica]).sort((a, b) => {
-            a = `${a.split("/")[1]}/${a.split("/")[0]}/${a.split("/")[2]}`;
-            b = `${b.split("/")[1]}/${b.split("/")[0]}/${b.split("/")[2]}`;
-            return new Date(a) - new Date(b);
-        });
 
-        dayKeys = dayKeys.map(
-            (date) => {
-                date = new Date(date)
-                return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`
-            }
-        )
 
-        console.log("Ordenado: ", dayKeys);
-        newData[metrica] = {};
-
-        for (let i = 0; i < dayKeys.length; i++) {
-            let hourKeys = Object.keys(data[metrica][dayKeys[i]]);
-
-            for (let j = 0; j < hourKeys.length; j++) {
-                let date = new Date(dayKeys[i]);
-                date = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-                newData[metrica]['Dia'+date+'Hora'+hourKeys[j]] = (data[metrica][dayKeys[i]][hourKeys[j]].math.mean);
-            }
-        
-        }
-
-        dayKeys = dayKeys.map(
-            (date) => {
-                return `${date.split("/")[0]}/${date.split("/")[1]}/${date.split("/")[2]}`;
-            }
-        )   
-
-        console.log("Sorteado correto: " + dayKeys)
-        appendChartData(newData, dayKeys) */
-    
-    
-    
-
-    
-
-    
 }
 
 async function getDates() {
@@ -140,7 +99,7 @@ async function getDates() {
     res = await res.json();
     let keys = Object.keys(res);
 
-    teste.innerHTML += "OK"
+    
     console.log(res)
     transformData(res, keys)
 
@@ -150,8 +109,7 @@ function findDataset(label, value) {
     if (value == -500) value = 0;
     for (let i = 0; i < myChart.data.datasets.length; i++) {
         if (myChart.data.datasets[i].label == label) {
-            myChart.data.datasets[i].data.push(parseFloat(value.toFixed(2)))
-            myChart.update()
+            return i;
         }
     }
 }
@@ -166,41 +124,9 @@ function updateKey(data) {
     return data;
 }
 
-function appendChartData(data, keys) {
-    let metricas, value;
-
-    data = updateKey(data);
-
-    for (let i = 0; i < keys.length; i++) {
-        metricas = data[keys[i]];
-        myChart.data.labels.push(keys[i])
-
-        for (let metrica in metricas) {
-            value = metricas[metrica].mean;
-
-            findDataset(labelsTranslate[metrica], value)
-        }
-        myChart.update()
-    }
-
-    if (keys.length < 2) return;
-
-    data = updateKey(data);
-
-
-    for (let i = 0; i < 3; i++) {
-        let lastDate = myChart.data.labels[myChart.data.labels.length - 1];
-        let newDate = new Date(lastDate);
-        newDate.setDate(newDate.getDate() + 1);
-        newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}`;
-        myChart.data.labels.push(newDate);
-        for (let metrica in metricas) {
-            keys = createPredict(keys, data, metrica);
-        }
-    }
-
+function appendChartData(value, metrica) {
+    findDataset(labelsTranslate[metrica], value.math.mean)
     myChart.update()
-
 
 }
 

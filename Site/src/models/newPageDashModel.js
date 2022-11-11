@@ -121,7 +121,7 @@ function reduceSeconds(data) {
             let itemDate = new Date(item.dataColeta);
             if (i >= 1) {
                 let lastItemDate = new Date(arr[i - 1].dataColeta);
-                if (itemDate.getHours() == lastItemDate.getHours() && itemDate.getMinutes() == lastItemDate.getMinutes()) {
+                if (lastItemDate.getDate() == itemDate.getDate() && lastItemDate.getMonth() == itemDate.getMonth() && lastItemDate.getFullYear() == itemDate.getFullYear() && lastItemDate.getHours() == itemDate.getHours() && lastItemDate.getMinutes() == itemDate.getMinutes()) {
                     return;
                 }
             }
@@ -130,7 +130,7 @@ function reduceSeconds(data) {
             let dataFilteredForMinutes = (data.filter(
                 (item2) => {
                     let date2 = new Date(item2.dataColeta);
-                    return date2.getHours() == itemDate.getHours() && date2.getMinutes() == itemDate.getMinutes();
+                    return date2.getDate() == itemDate.getDate() && date2.getMonth() == itemDate.getMonth() && date2.getFullYear() == itemDate.getFullYear() && date2.getHours() == itemDate.getHours() && date2.getMinutes() == itemDate.getMinutes();
                 }
             ))
 
@@ -140,14 +140,44 @@ function reduceSeconds(data) {
                 nomeComponente: item.nomeComponente,
                 nomeMetrica: item.nomeMetrica,
                 unidadeDeMedida: item.unidadeDeMedida,
-                dataColeta: itemDate.getFullYear() + "-" + (itemDate.getMonth() + 1) + "-" + itemDate.getDate() + " " + itemDate.getHours() + ":" + itemDate.getMinutes() + ":00",
+                dataColeta: {
+                    date: itemDate.getDate() + "/" + (itemDate.getMonth() + 1) + "/" + itemDate.getFullYear(),
+                    hour: itemDate.getHours()
+                },
                 valorLeitura: mean
             });
-
-
         });
     
-    return  appendMean(/* joinHours */(getDataByHour(newData)));
+    return getDataByHour(newData);
+}
+
+function getDataByHour(data) {
+    let dataSeparatedByHour = {};
+    
+    data.forEach(
+        (item) => {
+            item.valorLeitura = parseFloat(item.valorLeitura);
+
+            if (dataSeparatedByHour[item.dataColeta.date] == undefined) dataSeparatedByHour[item.dataColeta.date] = {};
+            if (dataSeparatedByHour[item.dataColeta.date][item.dataColeta.hour] == undefined) dataSeparatedByHour[item.dataColeta.date][item.dataColeta.hour] = [];
+
+            dataSeparatedByHour[item.dataColeta.date][item.dataColeta.hour].push(item.valorLeitura)
+        }
+
+    )
+    return appendMean(dataSeparatedByHour)
+}
+
+function appendMean(data) {
+    Object.keys(data).forEach(
+        (key) => {
+            let hoursKeys = Object.keys(data[key]);
+            hoursKeys.forEach(
+                (hour) => {
+                    data[key][hour] = getMathInformationsEnhanced(data[key][hour]);
+                })
+        });
+    return data
 }
 
 function getMathInformationsEnhanced(data) {
@@ -156,88 +186,8 @@ function getMathInformationsEnhanced(data) {
         variance: math.round(math.variance(data, "uncorrected"), 3),
         standardDeviation: math.round(math.std(data), 3),
     }
-    /* 
-        Com Nada: - 1
-        mean: 2002.2879356568365
-        variance: 456664.5570700399
-        Com uncorrected:  +- 0 Correto
-        mean: 2002.2879356568365
-        variance: 456419.6967177235 
-        Com biased: + 1
-        mean: 2002.2879356568365
-        variance: 456175.09880951466
-    */
 }
 
-function appendMean(data) {
-    let keys = Object.keys(data);
-    let newKey;
-
-    for (let i = 0; i < keys.length; i++) {
-        let hoursKeys = Object.keys(data[keys[i]]);
-        for (let j = 0; j < hoursKeys.length; j++) {
-            newKey = {};
-            /* newKey.allData = data[keys[i]][hoursKeys[j]]; */
-            newKey.math = getMathInformationsEnhanced(data[keys[i]][hoursKeys[j]]);
-
-            data[keys[i]][hoursKeys[j]] = newKey;
-        }
-    }
-    return data
-}
-
-function joinHours(data) {
-    let dateKeys = Object.keys(data);
-
-    for (let i = 0; i < dateKeys.length; i++) {
-        let hourKeys = Object.keys(data[dateKeys[i]]);
-        for (let j = 0; j < hourKeys.length; j++) {
-            if (j % 2 != 0) {
-                let lastHour = hourKeys[j - 1];
-
-                if (lastHour == hourKeys[j] - 1) {
-                    data[dateKeys[i]][`${lastHour}-${hourKeys[j]}`] = data[dateKeys[i]][lastHour].concat(data[dateKeys[i]][hourKeys[j]]);
-                    delete data[dateKeys[i]][lastHour];
-                    delete data[dateKeys[i]][hourKeys[j]];
-                }
-            }
-        }
-    }
-
-    return data;
-}
-/* Muito processamento aqui, então divide pelo número de métricas */
-function getDataByHour(data) {
-
-    data = data.map(
-        (item) => {
-            let date = new Date(item.dataColeta);
-            item.dataColeta =
-            {
-                'date': (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear(),
-                'hour': date.getHours()
-            };
-            return item;
-        }
-    )
-
-    let informations = {
-
-    }
-    data.forEach(
-        (item) => {
-            item.valorLeitura = parseFloat(item.valorLeitura);
-
-            if (informations[item.dataColeta.date] == undefined) informations[item.dataColeta.date] = {};
-            if (informations[item.dataColeta.date][item.dataColeta.hour] == undefined) informations[item.dataColeta.date][item.dataColeta.hour] = [];
-
-            informations[item.dataColeta.date][item.dataColeta.hour].push(item.valorLeitura)
-        }
-
-    )
-
-    return informations
-}
 module.exports = {
     getDados,
     getView,

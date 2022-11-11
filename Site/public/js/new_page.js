@@ -21,6 +21,7 @@ var myChart = new Chart(
         data: {
             labels: [],
             datasets: [{
+                spanGaps: true,
                 label: 'Utilização Da CPU',
                 backgroundColor: 'rgba(1, 46, 64, 0.50)',
                 borderColor: 'rgba(1, 46, 64, 0.80)',
@@ -34,6 +35,7 @@ var myChart = new Chart(
 
             },
             {
+                spanGaps: true,
                 label: 'Temperatura Da CPU',
                 backgroundColor: 'rgba(34, 187, 187, 0.50)',
                 borderColor: '#22BABB',
@@ -45,6 +47,7 @@ var myChart = new Chart(
                 pointBorderWidth: 0.1,
             },
             {
+                spanGaps: true,
                 label: 'Utilização Da Memória Ram',
                 backgroundColor: 'rgba(52, 136, 136, 0.50)',
                 borderColor: '#348888',
@@ -56,6 +59,7 @@ var myChart = new Chart(
                 pointBorderWidth: 0.1,
             },
             {
+                spanGaps: true,
                 label: 'Utilização Do Disco',
                 backgroundColor: 'rgba(158, 248, 238, 0.50)', // Alerta: #FA7F08 Crítico: #F24405
                 borderColor: '#9EF8EE',
@@ -67,11 +71,12 @@ var myChart = new Chart(
                 pointBorderWidth: 0.1,
             },]
         },
-        options: {}
+        options: {
+        }
     }
 );
 
-function transformData(data) {
+function appendLabels(data) {
     for (let metrica in data) {
         for (let day in data[metrica]) {
             new_day = `${day.split("/")[1]}/${day.split("/")[0]}/${day.split("/")[2]}`;
@@ -79,15 +84,36 @@ function transformData(data) {
                 if (myChart.data.labels.indexOf(`${new_day}-${hour}h`) == -1) {
                     myChart.data.labels.push(`${new_day}-${hour}h`);
                 }
-                findDataset(labelsTranslate[metrica])
-                appendChartData(data[metrica][day][hour], metrica)
+
             }
-            
         }
     }
-
-
+    separateChartData(data)
 }
+
+function separateChartData(data) {
+    for (let metrica in data) {
+        for (let day in data[metrica]) {
+            new_day = `${day.split("/")[1]}/${day.split("/")[0]}/${day.split("/")[2]}`;
+            for (let hour in data[metrica][day]) {
+                let dataset_num = findDataset(labelsTranslate[metrica]);
+                let myChartLabelPos = myChart.data.labels.indexOf(`${new_day}-${hour}h`);
+
+                if (myChart.data.datasets[dataset_num].data[myChartLabelPos] == undefined) {
+                    for (let i = myChart.data.datasets[dataset_num].data.length; i < myChartLabelPos; i++) {
+                        myChart.data.datasets[dataset_num].data.push(null);
+                    }
+
+                    
+                    myChart.data.datasets[dataset_num].data[myChartLabelPos] = data[metrica][day][hour].math.mean;
+                }
+                console.log(data[metrica][day][hour])
+                appendChartData(data[metrica][day][hour], metrica)
+            }
+        }
+    }
+}
+
 
 async function getDates() {
     let res = await fetch("/npd/getInformationsByDateHour/1&1", {
@@ -101,12 +127,11 @@ async function getDates() {
 
     
     console.log(res)
-    transformData(res, keys)
+    appendLabels(res, keys)
 
 }
 
-function findDataset(label, value) {
-    if (value == -500) value = 0;
+function findDataset(label) {
     for (let i = 0; i < myChart.data.datasets.length; i++) {
         if (myChart.data.datasets[i].label == label) {
             return i;
@@ -125,9 +150,9 @@ function updateKey(data) {
 }
 
 function appendChartData(value, metrica) {
-    findDataset(labelsTranslate[metrica], value.math.mean)
+    let dataset_num = findDataset(labelsTranslate[metrica]);
+    myChart.data.datasets[dataset_num].data.push(value.math.mean);
     myChart.update()
-
 }
 
 function createPredict(keys, data, metrica, i) {

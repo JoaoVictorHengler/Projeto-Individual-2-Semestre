@@ -5,10 +5,10 @@ async function getDados(req, res) {
     let fkEmpresa = req.body.fkEmpresa;
     let fkMaquina = req.body.fkMaquina;
     let nomeMetrica = req.body.nomeMetrica;
-    
+
     let maquinaInfo = await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina);
     let response = await dashModel.getDados(maquinaInfo[0].nomeEmpresa, maquinaInfo[0].nomeMaquina, nomeMetrica);
-    res.json({"metricas": response});
+    res.json({ "metricas": response });
 }
 /* Novo */
 async function getMeanHours(req, res) {
@@ -19,20 +19,37 @@ async function getMeanHours(req, res) {
     let machine = await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina);
     for (let i = 0; i < metricas.length; i++) {
         if (metricas[i].isEstatico == 0) {
-            if (machine[0].sistemaOperacional == "Windows" && metricas[i].nomeMetrica == "cpu_Temperature") continue; 
-            
+            if (machine[0].sistemaOperacional == "Windows" && metricas[i].nomeMetrica == "cpu_Temperature") continue;
+            if (metricas[i].nomeMetrica != "cpu_Utilizacao") continue;
             let dateMetrica = dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, metricas[i].nomeMetrica);
             allPromises.push(dateMetrica);
             console.log("Promessa Iniciada...")
         }
     }
-    
+
     Promise.all(allPromises).then((values) => {
         console.log("Promessas Concluídas!")
-        let response = {};
-        for (let i = 0; i < values.length; i++) {
+        let dates = {};
+        values.forEach(
+            (result) => {
+                Object.keys(result.data).forEach(
+                    (key) => {
+                        if (dates[key] == undefined) dates[key] = {};
+                        Object.keys(result.data[key]).forEach(
+                            (hour) => {
+                                if (dates[key][hour] == undefined) dates[key][hour] = {};
+                                if (dates[key][hour][result.metrica] == undefined) dates[key][hour][result.metrica] = {};
+                                dates[key][hour][result.metrica] = result.data[key][hour];
+                            });
+                    }
+                )
+            }
+        )
+        console.log(dates)
+        let response = { "a": values[0] };
+        /* for (let i = 0; i < values.length; i++) {
             response[values[i].metrica] = values[i].data;
-        }
+        } */
 
         res.json(response);
     });

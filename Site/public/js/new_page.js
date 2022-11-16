@@ -7,7 +7,14 @@ const labels = [
     'June',
 ];
 
-var labelsTranslate = {
+const datasetPredictColor = {
+    "Utilização Da CPU": getPredictColor(),
+    "Temperatura Da CPU": getPredictColor(),
+    "Utilização Da Memória Ram": getPredictColor(),
+    "Utilização Do Disco": getPredictColor(),
+}
+
+const labelsTranslate = {
     "cpu_Utilizacao": "Utilização Da CPU",
     "cpu_Temperature": "Temperatura Da CPU",
     "ram_Usada": "Utilização Da Memória Ram",
@@ -21,7 +28,7 @@ var myChart = new Chart(
         data: {
             labels: [],
             datasets: [{
-                spanGaps: true,
+                spanGaps: false,
                 label: 'Utilização Da CPU',
                 backgroundColor: 'rgba(1, 46, 64, 0.50)',
                 borderColor: 'rgba(1, 46, 64, 0.80)',
@@ -29,44 +36,44 @@ var myChart = new Chart(
                 data: [],
 
                 lineTension: 0.1,
-                pointRadius: 0.1,
+                pointRadius: 1,
                 pointHitRadius: 100,
                 pointBorderWidth: 0.1,
 
             },
             {
-                spanGaps: true,
+                spanGaps: false,
                 label: 'Temperatura Da CPU',
                 backgroundColor: 'rgba(34, 187, 187, 0.50)',
                 borderColor: '#22BABB',
                 fill: true,
                 data: [],
                 lineTension: 0.1,
-                pointRadius: 0.1,
+                pointRadius: 1,
                 pointHitRadius: 100,
                 pointBorderWidth: 0.1,
             },
             {
-                spanGaps: true,
+                spanGaps: false,
                 label: 'Utilização Da Memória Ram',
                 backgroundColor: 'rgba(52, 136, 136, 0.50)',
                 borderColor: '#348888',
                 fill: true,
                 data: [],
                 lineTension: 0.1,
-                pointRadius: 0.1,
+                pointRadius: 1,
                 pointHitRadius: 100,
                 pointBorderWidth: 0.1,
             },
             {
-                spanGaps: true,
+                spanGaps: false,
                 label: 'Utilização Do Disco',
                 backgroundColor: 'rgba(158, 248, 238, 0.50)', // Alerta: #FA7F08 Crítico: #F24405
                 borderColor: '#9EF8EE',
                 fill: true,
                 data: [],
                 lineTension: 0.1,
-                pointRadius: 0.1,
+                pointRadius: 1,
                 pointHitRadius: 100,
                 pointBorderWidth: 0.1,
             },]
@@ -76,45 +83,6 @@ var myChart = new Chart(
     }
 );
 
-function appendLabels(data) {
-    for (let metrica in data) {
-        for (let day in data[metrica]) {
-            new_day = `${day.split("/")[1]}/${day.split("/")[0]}/${day.split("/")[2]}`;
-            for (let hour in data[metrica][day]) {
-                if (myChart.data.labels.indexOf(`${new_day}-${hour}h`) == -1) {
-                    myChart.data.labels.push(`${new_day}-${hour}h`);
-                }
-
-            }
-        }
-    }
-    separateChartData(data)
-}
-
-function separateChartData(data) {
-    for (let metrica in data) {
-        for (let day in data[metrica]) {
-            new_day = `${day.split("/")[1]}/${day.split("/")[0]}/${day.split("/")[2]}`;
-            for (let hour in data[metrica][day]) {
-                let dataset_num = findDataset(labelsTranslate[metrica]);
-                let myChartLabelPos = myChart.data.labels.indexOf(`${new_day}-${hour}h`);
-
-                if (myChart.data.datasets[dataset_num].data[myChartLabelPos] == undefined) {
-                    for (let i = myChart.data.datasets[dataset_num].data.length; i < myChartLabelPos; i++) {
-                        myChart.data.datasets[dataset_num].data.push(null);
-                    }
-
-                    
-                    myChart.data.datasets[dataset_num].data[myChartLabelPos] = data[metrica][day][hour].math.mean;
-                }
-                console.log(data[metrica][day][hour])
-                appendChartData(data[metrica][day][hour], metrica)
-            }
-        }
-    }
-}
-
-
 async function getDates() {
     let res = await fetch("/npd/getInformationsByDateHour/1&1", {
         method: "GET",
@@ -123,12 +91,21 @@ async function getDates() {
         }
     });
     res = await res.json();
-    let keys = Object.keys(res);
 
-    
-    console.log(res)
-    appendLabels(res, keys)
+    console.log(res);
+    res = organizeDate(res);
+    appendLabels(res);
+}
 
+function organizeDate(data) {
+    let objectKeysDate = Object.keys(data);
+    objectKeysDate = objectKeysDate.reverse();
+    let newData = {};
+    for (let i = 0; i < objectKeysDate.length; i++) {
+        newData[objectKeysDate[i]] = data[objectKeysDate[i]];
+    }
+
+    return newData;
 }
 
 function findDataset(label) {
@@ -139,51 +116,131 @@ function findDataset(label) {
     }
 }
 
-function updateKey(data) {
-    for (let key in data) {
-        let newData = data[key];
-        let date = `${key.split("/")[1]}/${key.split("/")[0]}/${key.split("/")[2]}`;
-        data[date] = newData;
-        delete data[key];
+function appendLabels(data) {
+    let label;
+
+    for (let date in data) {
+        for (let hour in data[date]) {
+            label = `${date}-${hour}h`;
+            if (myChart.data.labels.indexOf(label) == -1) {
+                myChart.data.labels.push(label);
+            }
+        }
     }
-    return data;
+    myChart.update();
+    console.log("Labels adicionadas.");
+    separateChartData(data)
+}
+
+function separateChartData(data) {
+    for (let date in data) {
+        for (let hour in data[date]) {
+            for (let metric in data[date][hour]) {
+                let datasetPosArr = findDataset(labelsTranslate[metric]);
+                let myChartLabelPos = myChart.data.labels.indexOf(`${date}-${hour}h`);
+                if (myChart.data.datasets[datasetPosArr].data[myChartLabelPos] == undefined) {
+                    for (let i = myChart.data.datasets[datasetPosArr].data.length; i < myChartLabelPos; i++) {
+                        myChart.data.datasets[datasetPosArr].data.push(null);
+                    }
+                }
+                appendChartData(data[date][hour][metric].mean, metric)
+            }
+        }
+    }
 }
 
 function appendChartData(value, metrica) {
     let dataset_num = findDataset(labelsTranslate[metrica]);
-    myChart.data.datasets[dataset_num].data.push(value.math.mean);
+    myChart.data.datasets[dataset_num].data.push(value);
     myChart.update()
 }
 
-function createPredict(keys, data, metrica, i) {
+function getMeanGraphAngle(data) {
+    let graphAngles = [];
 
-    lastKeys = [keys[keys.length - 2], keys[keys.length - 1]]
+    data.forEach((value, i, arr) => {
+        if (i > 0) {
+            let x1 = i - 1;
+            let y1 = value[0];
+            let x2 = i;
+            let y2 = value[1];
 
-    let x1, x2, y1, y2;
-    x1 = myChart.data.labels.length - 1;
-    x2 = myChart.data.labels.length;
-    y1 = data[lastKeys[0]][metrica].mean;
-    y2 = data[lastKeys[1]][metrica].mean;
-    let tanAngle = (y2 - y1) / (x2 - x1);
-    console.log("x1: ", x1, "x2: ", x2, "y1: ", y1, "y2: ", y2, "tanAngle: ", tanAngle)
+            let a = (y2 - y1) / (x2 - x1);
 
-    x1 = myChart.data.labels.length;
-    x2 = myChart.data.labels.length + 1;
-    y1 = data[lastKeys[1]][metrica].mean;
-    let predict = (tanAngle * (x2 - x1)) + y1;
-    console.log("x1: ", x1, "x2: ", x2, "y1: ", y1, "predict: ", predict)
-    findDataset(labelsTranslate[metrica], predict);
+            graphAngles.push(a);
+        }
+    });
+    let totalAngle = 0;
+    graphAngles.forEach(
+        (value) => {
+            totalAngle += value;
+        }
+    )
+    totalAngle /= graphAngles.length;
+    console.log("Angulo médio do gráfico: " + totalAngle);
+    return totalAngle;
+}
 
-    let newDate = new Date(lastKeys[1]);
+function createNextDate() {
+    let lastDateChart = myChart.data.labels[myChart.data.labels.length - 1];
+    let lastDateSplited = lastDateChart.split("-");
+    let lastDay = lastDateSplited[0];
+    let lastHour = lastDateSplited[1].split("h")[0];
+
+    let newDate = new Date(lastDay);
+    lastHour++;
+    if (lastHour == 23) lastHour = "00";
     newDate.setDate(newDate.getDate() + 1);
-    newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}`
+    newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}`;
+    return [newDate, lastHour];
+}
 
+function createPredict() {
+    let nextDate = createNextDate();
 
+    myChart.data.labels.push(`${nextDate[0]}-${nextDate[1]}h`);
+    for (let dataset in myChart.data.datasets) {
+        let datasetPosArr = dataset;
+        dataset = myChart.data.datasets[dataset];
+        if (dataset.data.length > 0) {
 
-    keys[newDate] = {};
-    keys[newDate][metrica] = {};
-    keys[newDate][metrica].mean = predict;
-    return keys
+            let graph = [];
+            let lengthDataset = dataset.data.length;
+            if (lengthDataset > 10) lengthDataset = 10;
+
+            for (let i = 1; i < lengthDataset; i++) {
+                if (dataset.data[i] != null && dataset.data[i - 1] != null) {
+                    graph.push([dataset.data[i - 1], dataset.data[i]]);
+                }
+            }
+
+            let meanAngle = getMeanGraphAngle(graph);
+            let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
+            
+            myChart.data.datasets[datasetPosArr].data.push(predict);
+            myChart.update();
+
+            let chartBorderColor = [];
+            for (let i = 0; i < dataset.data.length - 1; i++) {
+                chartBorderColor.push(dataset.borderColor);
+            }
+
+            chartBorderColor.push(datasetPredictColor[dataset.label]);
+
+            myChart.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
+            /* myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
+            myChart.update();
+            console.log("Previsão criada.");
+        }
+    }
+}
+
+function getPredictColor() {
+    let color = "#";
+    for (let i = 0; i < 6; i++) {
+        color += Math.floor(Math.random() * 10);
+    }
+    return color;
 }
 
 getDates()

@@ -20,7 +20,7 @@ async function getMeanHours(req, res) {
     for (let i = 0; i < metricas.length; i++) {
         if (metricas[i].isEstatico == 0) {
             if (machine[0].sistemaOperacional == "Windows" && metricas[i].nomeMetrica == "cpu_Temperature") continue;
-            if (metricas[i].nomeMetrica != "cpu_Utilizacao") continue;
+            if (metricas[i].nomeMetrica != "cpu_Utilizacao" && metricas[i].nomeMetrica != "ram_Usada") continue;
             let dateMetrica = dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, metricas[i].nomeMetrica);
             allPromises.push(dateMetrica);
             console.log("Promessa Iniciada...")
@@ -46,35 +46,13 @@ async function getMeanHours(req, res) {
             }
         )
         console.log(dates)
-        let response = { "a": values[0] };
-        /* for (let i = 0; i < values.length; i++) {
-            response[values[i].metrica] = values[i].data;
-        } */
 
-        res.json(response);
+        res.json(dates);
     });
 
 }
 
-async function getDataDate(req, res) {
-    let fkMaquina = req.params.fkMaquina;
-    let fkEmpresa = req.params.fkEmpresa;
-
-    let metricas = await dashModel.getMetricas();
-    let response = {};
-    for (let i = 0; i < metricas.length; i++) {
-        let dateMetrica = await dashModel.getMeanDates(fkEmpresa, fkMaquina, metricas[i].nomeMetrica);
-
-        for (let key in dateMetrica) {
-            if (response[key] == undefined) response[key] = {};
-            response[key][metricas[i].nomeMetrica] = dateMetrica[key][metricas[i].nomeMetrica];
-        }
-    }
-    res.json(response);
-}
-
 module.exports = {
     getDados,
-    getDataDate,
     getMeanHours
 }

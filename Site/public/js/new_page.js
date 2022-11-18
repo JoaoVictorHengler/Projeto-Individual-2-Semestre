@@ -36,9 +36,9 @@ var myChart = new Chart(
                 data: [],
 
                 lineTension: 0.1,
-                pointRadius: 1,
+                pointRadius: 2,
                 pointHitRadius: 100,
-                pointBorderWidth: 0.1,
+                pointBorderWidth: 2,
 
             },
             {
@@ -49,9 +49,9 @@ var myChart = new Chart(
                 fill: true,
                 data: [],
                 lineTension: 0.1,
-                pointRadius: 1,
+                pointRadius: 2,
                 pointHitRadius: 100,
-                pointBorderWidth: 0.1,
+                pointBorderWidth: 2,
             },
             {
                 spanGaps: false,
@@ -61,9 +61,9 @@ var myChart = new Chart(
                 fill: true,
                 data: [],
                 lineTension: 0.1,
-                pointRadius: 1,
+                pointRadius: 2,
                 pointHitRadius: 100,
-                pointBorderWidth: 0.1,
+                pointBorderWidth: 2,
             },
             {
                 spanGaps: false,
@@ -73,9 +73,9 @@ var myChart = new Chart(
                 fill: true,
                 data: [],
                 lineTension: 0.1,
-                pointRadius: 1,
+                pointRadius: 2,
                 pointHitRadius: 100,
-                pointBorderWidth: 0.1,
+                pointBorderWidth: 2,
             },]
         },
         options: {
@@ -185,52 +185,55 @@ function createNextDate() {
     let lastDateChart = myChart.data.labels[myChart.data.labels.length - 1];
     let lastDateSplited = lastDateChart.split("-");
     let lastDay = lastDateSplited[0];
+    lastDay = `${lastDay.substring(6, 10)}/${lastDay.substring(3, 5)}/${lastDay.substring(0, 2)}`;
     let lastHour = lastDateSplited[1].split("h")[0];
 
-    let newDate = new Date(lastDay);
-    lastHour++;
-    if (lastHour == 23) lastHour = "00";
-    newDate.setDate(newDate.getDate() + 1);
-    newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}`;
-    return [newDate, lastHour];
+    let date = lastDay + " " + lastHour + ":00:00";
+    let newDate = new Date(date);
+    newDate.setHours(newDate.getHours()+1);
+
+    newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}-${newDate.getHours()}h`;
+    return newDate;
 }
 
 function createPredict() {
-    let nextDate = createNextDate();
-
-    myChart.data.labels.push(`${nextDate[0]}-${nextDate[1]}h`);
-    for (let dataset in myChart.data.datasets) {
-        let datasetPosArr = dataset;
-        dataset = myChart.data.datasets[dataset];
-        if (dataset.data.length > 0) {
-
-            let graph = [];
-            let lengthDataset = dataset.data.length;
-            if (lengthDataset > 10) lengthDataset = 10;
-
-            for (let i = 1; i < lengthDataset; i++) {
-                if (dataset.data[i] != null && dataset.data[i - 1] != null) {
-                    graph.push([dataset.data[i - 1], dataset.data[i]]);
+    
+    for (let i = 0; i < 5; i++) {
+        let nextDate = createNextDate();
+        myChart.data.labels.push(nextDate);
+        for (let dataset in myChart.data.datasets) {
+            let datasetPosArr = dataset;
+            dataset = myChart.data.datasets[dataset];
+            if (dataset.data.length > 0) {
+    
+                let graph = [];
+                let lengthDataset = dataset.data.length;
+                let medianDataset = Math.floor(lengthDataset / 2);
+    
+                for (let j = lengthDataset; j > medianDataset + i; j--) {
+                    if (dataset.data[j] != null && dataset.data[j - 1] != null) {
+                        graph.push([dataset.data[j - 1], dataset.data[j]]);
+                    }
                 }
+    
+                let meanAngle = getMeanGraphAngle(graph);
+                let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
+                
+                myChart.data.datasets[datasetPosArr].data.push(predict);
+                myChart.update();
+    
+                let chartBorderColor = [];
+                for (let i = 0; i < dataset.data.length - 1; i++) {
+                    chartBorderColor.push(dataset.borderColor);
+                }
+    
+                chartBorderColor.push(datasetPredictColor[dataset.label]);
+    
+                myChart.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
+                /* myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
+                myChart.update();
+                console.log("Previsão criada.");
             }
-
-            let meanAngle = getMeanGraphAngle(graph);
-            let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
-            
-            myChart.data.datasets[datasetPosArr].data.push(predict);
-            myChart.update();
-
-            let chartBorderColor = [];
-            for (let i = 0; i < dataset.data.length - 1; i++) {
-                chartBorderColor.push(dataset.borderColor);
-            }
-
-            chartBorderColor.push(datasetPredictColor[dataset.label]);
-
-            myChart.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
-            /* myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
-            myChart.update();
-            console.log("Previsão criada.");
         }
     }
 }

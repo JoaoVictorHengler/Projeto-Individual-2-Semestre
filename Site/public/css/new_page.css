@@ -6,3 +6,12 @@
 body {
     font-family: 'Nunito', 'Open Sans', sans-serif !important;
 }
+
+table,th, td {
+    border: 1px solid #000;
+    border-collapse: collapse;
+}
+
+#utilizacao-row td {
+    padding: 2px;
+}

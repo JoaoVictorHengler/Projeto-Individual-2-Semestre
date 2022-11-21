@@ -36,7 +36,7 @@ async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, nomeMetrica) {
     let machine = await getMaquinaInfo(fkEmpresa, fkMaquina);
     let data = await getView(machine[0].nomeEmpresa, machine[0].nomeMaquina, nomeMetrica, true, false);
     data = await reduceSeconds(data);
-    console.log("Promessa Concluída")
+    
     return {
         metrica: nomeMetrica,
         data: data
@@ -45,6 +45,7 @@ async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, nomeMetrica) {
 
 function reduceSeconds(data) {
     let newData = [];
+    let sameDate = [];
 
     data.forEach(
         (item, i, arr) => {
@@ -55,29 +56,33 @@ function reduceSeconds(data) {
                     return;
                 }
             }
-
-
-            let dataFilteredForMinutes = (data.filter(
-                (item2) => {
-                    let date2 = new Date(item2.dataColeta);
-                    return date2.getDate() == itemDate.getDate() && date2.getMonth() == itemDate.getMonth() && date2.getFullYear() == itemDate.getFullYear() && date2.getHours() == itemDate.getHours() && date2.getMinutes() == itemDate.getMinutes();
-                }
-            ))
-
-            let mean = math.mean(dataFilteredForMinutes.map((item) => { return parseFloat(item.valorLeitura) }));
-            newData.push({
-                nomeMaquina: item.nomeMaquina,
-                nomeComponente: item.nomeComponente,
-                nomeMetrica: item.nomeMetrica,
-                unidadeDeMedida: item.unidadeDeMedida,
-                dataColeta: {
-                    date: itemDate.getDate() + "/" + (itemDate.getMonth() + 1) + "/" + itemDate.getFullYear(),
-                    hour: itemDate.getHours()
-                },
-                valorLeitura: mean
-            });
+            sameDate.push(item);
         });
     
+
+    sameDate.forEach ( (item) => {
+        let itemDate = new Date(item.dataColeta);
+        let dataFilteredForMinutes = (data.filter(
+            (item2) => {
+                let date2 = new Date(item2.dataColeta);
+                return date2.getDate() == itemDate.getDate() && date2.getMonth() == itemDate.getMonth() && date2.getFullYear() == itemDate.getFullYear() && date2.getHours() == itemDate.getHours() && date2.getMinutes() == itemDate.getMinutes();
+            }
+        ))
+
+        let mean = math.mean(dataFilteredForMinutes.map((item) => { return parseFloat(item.valorLeitura) }));
+        newData.push({
+            nomeMaquina: item.nomeMaquina,
+            nomeComponente: item.nomeComponente,
+            nomeMetrica: item.nomeMetrica,
+            unidadeDeMedida: item.unidadeDeMedida,
+            dataColeta: {
+                date: itemDate.getDate() + "/" + (itemDate.getMonth() + 1) + "/" + itemDate.getFullYear(),
+                hour: itemDate.getHours()
+            },
+            valorLeitura: mean
+        });
+    });
+
     return getDataByHour(newData);
 }
 

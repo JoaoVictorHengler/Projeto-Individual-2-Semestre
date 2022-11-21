@@ -1,5 +1,6 @@
 var dashModel = require("../models/newPageDashModel")
 var dashModel2 = require("../models/dashModel")
+const { Worker } = require('worker_threads')
 
 async function getDados(req, res) {
     let fkEmpresa = req.body.fkEmpresa;
@@ -12,20 +13,29 @@ async function getDados(req, res) {
 }
 /* Novo */
 async function getMeanHours(req, res) {
+    console.log("Inicio: " + `${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}`);
     let fkMaquina = req.params.fkMaquina;
     let fkEmpresa = req.params.fkEmpresa;
     let metricas = await dashModel.getMetricas();
     let allPromises = [];
     let machine = await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina);
-    for (let i = 0; i < metricas.length; i++) {
-        if (metricas[i].isEstatico == 0) {
-            if (machine[0].sistemaOperacional == "Windows" && metricas[i].nomeMetrica == "cpu_Temperature") continue;
-            if (metricas[i].nomeMetrica != "cpu_Utilizacao" && metricas[i].nomeMetrica != "ram_Usada") continue;
-            let dateMetrica = dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, metricas[i].nomeMetrica);
-            allPromises.push(dateMetrica);
-            console.log("Promessa Iniciada...")
+    metricas.forEach(
+        (metrica, i) => {
+
+
+            if (metricas[i].isEstatico == 0) {
+                if (machine[0].sistemaOperacional == "Windows" && metricas[i].nomeMetrica == "cpu_Temperature") return;
+                if (metricas[i].nomeMetrica != "cpu_Utilizacao" && metricas[i].nomeMetrica != "ram_Usada") return;
+                runService({
+                    nomeEmpresa: machine[0].nomeEmpresa,
+                    nomeMaquina: machine[0].nomeMaquina,
+                    nomeMetrica: metrica.nomeMetrica
+                });
+
+
+            }
         }
-    }
+    )
 
     Promise.all(allPromises).then((values) => {
         console.log("Promessas Concluídas!")
@@ -45,11 +55,21 @@ async function getMeanHours(req, res) {
                 )
             }
         )
-        console.log(dates)
-
+        console.log("Fim: " + `${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}`);
         res.json(dates);
     });
 
+}
+
+function runService(workerData) {
+    return new Promise((resolve, reject) => {
+        let workers = new Worker("worker.js", {
+            workerData
+        });
+    });
+    
+    let dateMetrica = dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, metricas[i].nomeMetrica);
+    worker
 }
 
 module.exports = {

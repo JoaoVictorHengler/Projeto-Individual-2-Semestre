@@ -7,12 +7,7 @@ const labels = [
     'June',
 ];
 
-const datasetPredictColor = {
-    "Utilização Da CPU": getPredictColor(),
-    "Temperatura Da CPU": getPredictColor(),
-    "Utilização Da Memória Ram": getPredictColor(),
-    "Utilização Do Disco": getPredictColor(),
-}
+var alert;
 
 const labelsTranslate = {
     "cpu_Utilizacao": "Utilização Da CPU",
@@ -95,6 +90,8 @@ async function getDates() {
     console.log(res);
     res = organizeDate(res);
     appendLabels(res);
+    alert.close()
+
 }
 
 function organizeDate(data) {
@@ -190,63 +187,75 @@ function createNextDate() {
 
     let date = lastDay + " " + lastHour + ":00:00";
     let newDate = new Date(date);
-    newDate.setHours(newDate.getHours()+1);
+    newDate.setHours(newDate.getHours() + 1);
 
     newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}-${newDate.getHours()}h`;
     return newDate;
 }
 
 function createPredict() {
-    
     for (let i = 0; i < 5; i++) {
         let nextDate = createNextDate();
         myChart.data.labels.push(nextDate);
-        for (let dataset in myChart.data.datasets) {
-            let datasetPosArr = dataset;
-            dataset = myChart.data.datasets[dataset];
-            if (dataset.data.length > 0) {
-    
+    }
+    let allPromises = [];
+    for (let dataset in myChart.data.datasets) {
+        allPromises.push(createPredictUsingDataset(dataset, myChart.data.datasets[dataset]));
+    }
+    Promise.all(allPromises).then(
+        (values) => {
+            console.log("Previsão criada.");
+        })
+
+}
+
+function createPredictUsingDataset(datasetPosArr, dataset) {
+    return new Promise((resolve, reject) => {
+        if (dataset.data.length > 0) {
+            for (let i = 0; i < 5; i++) {
                 let graph = [];
                 let lengthDataset = dataset.data.length;
                 let medianDataset = Math.floor(lengthDataset / 2);
-    
+
                 for (let j = lengthDataset; j > medianDataset + i; j--) {
                     if (dataset.data[j] != null && dataset.data[j - 1] != null) {
                         graph.push([dataset.data[j - 1], dataset.data[j]]);
                     }
                 }
-    
+
                 let meanAngle = getMeanGraphAngle(graph);
                 let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
-                
+
                 myChart.data.datasets[datasetPosArr].data.push(predict);
                 myChart.update();
-    
+
                 let chartBorderColor = [];
                 for (let i = 0; i < dataset.data.length - 1; i++) {
                     chartBorderColor.push(dataset.borderColor);
                 }
-    
-                chartBorderColor.push(datasetPredictColor[dataset.label]);
-    
+                console.log(chartBorderColor);
+                chartBorderColor.push("#FA7F08");
+                console.log(chartBorderColor);
+
                 myChart.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
+/*                 myChart.data.datasets[datasetPosArr].borderColor = chartBorderColor; */
+/*                 myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
                 /* myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
                 myChart.update();
-                console.log("Previsão criada.");
             }
         }
-    }
+    });
 }
 
-function getPredictColor() {
-    let color = "#";
-    for (let i = 0; i < 6; i++) {
-        color += Math.floor(Math.random() * 10);
-    }
-    return color;
-}
 
-getDates()
+/*  */
+alert = swal.fire({
+    title: "Carregando...",
+    didOpen: () => {
+        Swal.showLoading()
+        getDates();
+    }
+})
 /* var mySlider = new rSlider({
     target: '#sampleSlider',
     values: [2008, 2009, 2010, 2011],

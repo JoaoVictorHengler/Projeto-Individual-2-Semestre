@@ -14,69 +14,77 @@
         <div class="input-group-addon">até</div>
         <input type="text" class="form-control" data-provide="datepicker2" id="datepicker2">
     </div> -->
-    <div style="width: 80vw;">
-        <canvas id="chart"></canvas>
+    <div style="display: flex;">
+        <div style="width: 50vw;">
+            <canvas id="chart"></canvas>
+            <button onclick="createPredict()">Create Predict</button>
+        </div>
+    
+        <div style="width: 50vw;">
+            <table>
+                <tr>
+                    <th>Métrica</th>
+                    <th>Dia</th>
+                    <th>Média</th>
+                    <th>Variação</th>
+                    <th>Desvio</th>
+                    <th>Mínimo</th>
+                    <th>Máximo</th>
+                </tr>
+                <tr id="utilizacao-row">
+                    <td>Utilização Cpu</td>
+                    <td>28/10/2022-12h</td>
+                    <td>6.623</td>
+                    <td>1.405</td>
+                    <td>1.234</td>
+                    <td>10</td>
+                    <td>20</td>
+                </tr>
+                <tr id="temperatura-row">
+                    <td>Temperatura Cpu</td>
+                    <td>28/10/2022-12h</td>
+                    <td>??</td>
+                    <td>??</td>
+                    <td>??</td>
+                    <td>??</td>
+                    <td>??</td>
+                </tr>
+                <tr id="frequencia-row">
+                    <td>Frequência Cpu</td>
+                    <td>28/10/2022-12h</td>
+                    <td>6.623</td>
+                    <td>1.405</td>
+                    <td>1.234</td>
+                    <td>10</td>
+                    <td>20</td>
+                </tr>
+                <tr id="uso-ram-row">
+                    <td>Uso Ram</td>
+                    <td>28/10/2022-12h</td>
+                    <td>6</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>4</td>
+                    <td>8</td>
+                </tr>
+                <tr id="uso-disco-row">
+                    <td>Uso Disco</td>
+                    <td>28/10/2022-12h</td>
+                    <td>6.623</td>
+                    <td>1.405</td>
+                    <td>1.234</td>
+                    <td>10</td>
+                    <td>20</td>
+                </tr>
+            </table>
+        </div>
     </div>
+    
 
-    <button onclick="createPredict()">Create Predict</button>
 
-    <table>
-        <tr>
-            <th>Métrica</th>
-            <th>Dia</th>
-            <th>Média</th>
-            <th>Variação</th>
-            <th>Desvio</th>
-            <th>Mínimo</th>
-            <th>Máximo</th>
-        </tr>
-        <tr>
-            <td>Utilização Cpu</td>
-            <td>28/10/2022-12h</td>
-            <td>6.623</td>
-            <td>1.405</td>
-            <td>1.234</td>
-            <td>10</td>
-            <td>20</td>
-        </tr>
-        <tr>
-            <td>Temperatura Cpu</td>
-            <td>28/10/2022-12h</td>
-            <td>??</td>
-            <td>??</td>
-            <td>??</td>
-            <td>??</td>
-            <td>??</td>
-        </tr>
-        <tr>
-            <td>Frequência Cpu</td>
-            <td>28/10/2022-12h</td>
-            <td>6.623</td>
-            <td>1.405</td>
-            <td>1.234</td>
-            <td>10</td>
-            <td>20</td>
-        </tr>
-        <tr>
-            <td>Uso Ram</td>
-            <td>28/10/2022-12h</td>
-            <td>6</td>
-            <td>0</td>
-            <td>0</td>
-            <td>4</td>
-            <td>8</td>
-        </tr>
-        <tr>
-            <td>Uso Disco</td>
-            <td>28/10/2022-12h</td>
-            <td>6.623</td>
-            <td>1.405</td>
-            <td>1.234</td>
-            <td>10</td>
-            <td>20</td>
-        </tr>
-    </table>
+    
 </body>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.css" rel="stylesheet"/>

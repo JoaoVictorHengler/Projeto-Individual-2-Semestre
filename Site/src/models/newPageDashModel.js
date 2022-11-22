@@ -68,7 +68,7 @@ function reduceSeconds(data) {
                 return date2.getDate() == itemDate.getDate() && date2.getMonth() == itemDate.getMonth() && date2.getFullYear() == itemDate.getFullYear() && date2.getHours() == itemDate.getHours() && date2.getMinutes() == itemDate.getMinutes();
             }
         ))
-
+        
         let mean = math.mean(dataFilteredForMinutes.map((item) => { return parseFloat(item.valorLeitura) }));
         newData.push({
             nomeMaquina: item.nomeMaquina,

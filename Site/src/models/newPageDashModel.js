@@ -22,7 +22,7 @@ async function getView(nomeEmpresa, nomeMaquina, nomeMetrica, order, limit) {
 
 async function getMetricas() {
     return await database.executar(
-        `SELECT nomeMetrica, unidadeDeMedida, isEstatico FROM Metrica`
+        `SELECT * FROM Metrica`
     );
 }
 
@@ -37,9 +37,10 @@ function getDataTime(fkEmpresa, fkMaquina) {
 }
 
 function getDataByHour(fkMaquina, fkEmpresa, data, hora) {
-    let res = database.executar(`SELECT fkMetrica, dataColeta, valorLeitura FROM Leitura AS L2
+    let res = database.executar(`SELECT fkMetrica, DATE(dataColeta) as 'onlyDay', HOUR(dataColeta) as 'onlyHour',
+    MINUTE(dataColeta) as 'onlyMinutes', SECOND(dataColeta) as 'onlySeconds', valorLeitura FROM Leitura AS L2
 		where L2.fkMaquina = ${fkMaquina} and L2.fkEmpresa = ${fkEmpresa}
-		and HOUR(L2.dataColeta) = ${hora} AND DATE(L2.dataColeta) = ${data} order by fkMetrica;`);
+		and HOUR(L2.dataColeta) = ${hora} AND DATE(L2.dataColeta) = '${data}' and valorLeitura != -500.00 order by fkMetrica;`);
     return res;
 }
 
@@ -47,46 +48,95 @@ function getDataByHour(fkMaquina, fkEmpresa, data, hora) {
 async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, data, hora, metricas) {
     let res = await getDataByHour(fkMaquina, fkEmpresa, data, hora);
     let result = {}, resultFiltered = {};
-
     res.forEach((item, i) => {
-        if (result[item.fkMetrica] == undefined) {
-            result[item.fkMetrica] = {};
-            resultFiltered[item.fkMetrica] = {};
+        let metrica = metricas.find((metrica) => metrica.idMetrica == item.fkMetrica);
+
+        if (result[metrica.nomeMetrica] == undefined) {
+            result[metrica.nomeMetrica] = {};
+            resultFiltered[metrica.nomeMetrica] = {};
         }
+        let date = new Date(item.onlyDay);
 
-        result[item.fkMetrica][item.dataColeta] = item.valorLeitura;
+        date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+        result[metrica.nomeMetrica][`${date}-${item.onlyHour}:${item.onlyMinutes}:${item.onlySeconds}`] = parseFloat(item.valorLeitura);
+    });
 
-        });
-    let init = 0;
-    res.forEach((item, i) => {
-        let itemDate = new Date(item.dataColeta);
-        if (i > 0) {
-            let prevItemDate = new Date(res[i - 1].dataColeta);
-            
-            if (`${itemDate.getHours()}:${itemDate.getMinutes()}` != `${prevItemDate.getHours()}:${prevItemDate.getMinutes()}` || `${itemDate.getDate()}/${itemDate.getMonth()}/${itemDate.getFullYear()}` != `${prevItemDate.getDate()}/${prevItemDate.getMonth()}/${prevItemDate.getFullYear()}`) {
-                result[item.fkMetrica][item.dataColeta] = result[item.fkMetrica][res[i - 1].dataColeta];
-                let dataMinute = [];
-                for (let j = i; j >= init; j--) {
-                    dataMinute.push(res[j].valorLeitura);
+    resultFiltered = reduceSeconds(result, resultFiltered);
+
+    Object.keys(resultFiltered).forEach(
+        (metrica) => {
+            let item = resultFiltered[metrica];
+            let data = Object.keys(item).map((key) => {
+                return {
+                    date: key,
+                    mean: item[key].mean,
+                    variance: item[key].totalVariance,
+                    length: item[key].totalLength
                 }
-
-                if (resultFiltered[item.fkMetrica][`${itemDate.getDate()}/${itemDate.getMonth()}/${itemDate.getFullYear()} ${itemDate.getHours()}:${itemDate.getMinutes()}`] == undefined) {
-                    resultFiltered[item.fkMetrica][`${itemDate.getDate()}/${itemDate.getMonth()}/${itemDate.getFullYear()} ${itemDate.getHours()}:${itemDate.getMinutes()}`] = {};
-                }
-                resultFiltered[item.fkMetrica][`${itemDate.getDate()}/${itemDate.getMonth()}/${itemDate.getFullYear()} ${itemDate.getHours()}:${itemDate.getMinutes()}`] = {
-                    fkMetrica: item.fkMetrica,
-                    dataColeta: item.dataColeta,
-                    valorLeitura: getMathInformationsEnhanced(dataMinute).mean
-                };
-
-                init = i+1;
+            });
+            let meanList = data.map((item) => {
+                return item.mean;
+            });
+            let math = getMathInformationsEnhanced(meanList);
+            resultFiltered[metrica] = {
+                math: math,
+                data: data
             }
         }
-    });
+    )
     
+    return {
+        date: data,
+        hour: hora,
+        result: resultFiltered
+    };
 }
 
-/* async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, nomeMetrica) {
+function reduceSeconds(result, resultFiltered) {
+    let init = 0;
+    for (let metrica in result) {
+        let listData = Object.keys(result[metrica]);
+        for (let i = 0; i < listData.length; i++) {
+            let totalVariance = 0;
+            let totalLength = 0;
+            if (i > 0) {
+                let item = listData[i];
+
+                let itemDate = new Date(item.split("-").join(" "));
+                let prevItemDate = new Date(listData[i - 1].split("-").join(" "));
+                if (`${itemDate.getHours()}:${itemDate.getMinutes()}` != 
+                `${prevItemDate.getHours()}:${prevItemDate.getMinutes()}` ||
+                `${itemDate.getDate()}/${itemDate.getMonth()}/${itemDate.getFullYear()}` != 
+                `${prevItemDate.getDate()}/${prevItemDate.getMonth()}/${prevItemDate.getFullYear()}`) {
+                    let dateMeaned = `${prevItemDate.getDate()}/${prevItemDate.getMonth()}/${prevItemDate.getFullYear()} ${prevItemDate.getHours()}:${prevItemDate.getMinutes()}:00`;
+                    let allDataToMean = [];
+                    for (let j = i; j > init; j--) {
+                        allDataToMean.push(result[metrica][listData[j]]);
+                        totalLength++;
+
+                    }   
+                    if (allDataToMean.length == 0) {
+                        allDataToMean.push(result[metrica][listData[i]]);
+                        totalLength++;
+                    }
+                    let math = getMathInformationsEnhanced(allDataToMean);
+                    resultFiltered[metrica][dateMeaned] = {
+                        mean: math.mean,
+                        totalLength: totalLength,
+                        totalVariance: math.variance,
+                    };
+                    
+
+                    init = i;
+                }
+            }
+        }
+    }
+    return resultFiltered;
+}
+
+/* Antigo:
+async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, nomeMetrica) {
     let machine = await getMaquinaInfo(fkEmpresa, fkMaquina);
     let data = await getView(machine[0].nomeEmpresa, machine[0].nomeMaquina, nomeMetrica, true, false);
     data = await reduceSeconds(data);

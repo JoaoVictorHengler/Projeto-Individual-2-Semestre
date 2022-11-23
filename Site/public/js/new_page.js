@@ -88,7 +88,7 @@ async function getDates() {
     res = await res.json();
 
     console.log(res);
-    res = organizeDate(res);
+    
     appendLabels(res);
     alert.close()
 
@@ -115,10 +115,13 @@ function findDataset(label) {
 
 function appendLabels(data) {
     let label;
-
+    
     for (let date in data) {
+        let date2 = date.split("-");
+        date2 = date2[2] + "/" + date2[1] + "/" + date2[0];
         for (let hour in data[date]) {
-            label = `${date}-${hour}h`;
+            label = `${date2}-${hour}h`;
+            console.log(label);
             if (myChart.data.labels.indexOf(label) == -1) {
                 myChart.data.labels.push(label);
             }

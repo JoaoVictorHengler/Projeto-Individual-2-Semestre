@@ -3,10 +3,10 @@ var router = express.Router()
 
 var dashController = require("../controllers/newPageDashController");
 
-router.get("/getDataByDate/:fkMaquina&:fkEmpresa", function(req, res) {
+/* router.get("/getDataByDate/:fkMaquina&:fkEmpresa", function(req, res) {
     dashController.getDataDate(req, res)
-})
-
+}) */
+/* Novo */
 router.get("/getInformationsByDateHour/:fkMaquina&:fkEmpresa", function(req, res) {
     dashController.getMeanHours(req, res)
 })

@@ -34,6 +34,7 @@ var myChart = new Chart(
                 pointRadius: 2,
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
+                borderRadius: 0.1
 
             },
             {
@@ -47,6 +48,7 @@ var myChart = new Chart(
                 pointRadius: 2,
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
+                borderRadius: 0.1
             },
             {
                 spanGaps: false,
@@ -59,6 +61,7 @@ var myChart = new Chart(
                 pointRadius: 2,
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
+                borderRadius: 0.1
             },
             {
                 spanGaps: false,
@@ -71,6 +74,7 @@ var myChart = new Chart(
                 pointRadius: 2,
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
+                borderRadius: 0.1
             },]
         },
         options: {
@@ -121,7 +125,6 @@ function appendLabels(data) {
         date2 = date2[2] + "/" + date2[1] + "/" + date2[0];
         for (let hour in data[date]) {
             label = `${date2}-${hour}h`;
-            console.log(label);
             if (myChart.data.labels.indexOf(label) == -1) {
                 myChart.data.labels.push(label);
             }
@@ -134,25 +137,29 @@ function appendLabels(data) {
 
 function separateChartData(data) {
     for (let date in data) {
+        let date2 = date.split("-");
+        date2 = date2[2] + "/" + date2[1] + "/" + date2[0];
         for (let hour in data[date]) {
             for (let metric in data[date][hour]) {
+                if (metric == "cpu_Frequencia_Atual" || metric == "disco_read_time" || metric =="disco_write_time") continue;
                 let datasetPosArr = findDataset(labelsTranslate[metric]);
-                let myChartLabelPos = myChart.data.labels.indexOf(`${date}-${hour}h`);
-                if (myChart.data.datasets[datasetPosArr].data[myChartLabelPos] == undefined) {
+                let myChartLabelPos = myChart.data.labels.indexOf(`${date2}-${hour}h`);
+                if (myChart.data.datasets[datasetPosArr].data[myChartLabelPos] === undefined) {
                     for (let i = myChart.data.datasets[datasetPosArr].data.length; i < myChartLabelPos; i++) {
                         myChart.data.datasets[datasetPosArr].data.push(null);
                     }
                 }
-                appendChartData(data[date][hour][metric].mean, metric)
+                appendChartData(data[date][hour][metric].math.mean, metric);
             }
         }
     }
+    console.log("Dados Adicionados.");
+    myChart.update();
 }
 
 function appendChartData(value, metrica) {
     let dataset_num = findDataset(labelsTranslate[metrica]);
     myChart.data.datasets[dataset_num].data.push(value);
-    myChart.update()
 }
 
 function getMeanGraphAngle(data) {
@@ -207,6 +214,7 @@ function createPredict() {
     }
     Promise.all(allPromises).then(
         (values) => {
+            myChart.update();
             console.log("Previsão criada.");
         })
 
@@ -230,23 +238,21 @@ function createPredictUsingDataset(datasetPosArr, dataset) {
                 let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
 
                 myChart.data.datasets[datasetPosArr].data.push(predict);
-                myChart.update();
 
                 let chartBorderColor = [];
                 for (let i = 0; i < dataset.data.length - 1; i++) {
                     chartBorderColor.push(dataset.borderColor);
                 }
-                console.log(chartBorderColor);
                 chartBorderColor.push("#FA7F08");
-                console.log(chartBorderColor);
 
                 myChart.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
-/*                 myChart.data.datasets[datasetPosArr].borderColor = chartBorderColor; */
+                myChart.data.datasets[datasetPosArr].borderColor = chartBorderColor;
 /*                 myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
                 /* myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
-                myChart.update();
             }
         }
+        resolve("Finalizado");
+        /* reject("Erro"); */
     });
 }
 

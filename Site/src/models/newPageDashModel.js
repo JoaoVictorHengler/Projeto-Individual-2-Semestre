@@ -21,7 +21,7 @@ async function getView(nomeEmpresa, nomeMaquina, nomeMetrica, order, limit) {
 }
 
 async function getMetricas() {
-    return await database.executar(
+    return database.executar(
         `SELECT * FROM Metrica`
     );
 }

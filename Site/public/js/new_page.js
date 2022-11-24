@@ -16,6 +16,7 @@ const labelsTranslate = {
     "disco_Usado": "Utilização Do Disco",
 }
 
+
 var myChart = new Chart(
     document.getElementById('chart'),
     {
@@ -30,7 +31,7 @@ var myChart = new Chart(
                 fill: true,
                 data: [],
 
-                lineTension: 0.1,
+                lineTension: 0.3,
                 pointRadius: 2,
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
@@ -44,7 +45,7 @@ var myChart = new Chart(
                 borderColor: '#22BABB',
                 fill: true,
                 data: [],
-                lineTension: 0.1,
+                lineTension: 0.3,
                 pointRadius: 2,
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
@@ -57,7 +58,7 @@ var myChart = new Chart(
                 borderColor: '#348888',
                 fill: true,
                 data: [],
-                lineTension: 0.1,
+                lineTension: 0.3,
                 pointRadius: 2,
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
@@ -70,7 +71,7 @@ var myChart = new Chart(
                 borderColor: '#9EF8EE',
                 fill: true,
                 data: [],
-                lineTension: 0.1,
+                lineTension: 0.3,
                 pointRadius: 2,
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
@@ -78,9 +79,17 @@ var myChart = new Chart(
             },]
         },
         options: {
+            interaction: {
+                mode: 'y'
+            }
         }
     }
 );
+
+
+function updateTable() {
+
+}
 
 async function getDates() {
     let res = await fetch("/npd/getInformationsByDateHour/1&1", {
@@ -192,6 +201,8 @@ function createNextDate() {
     let lastDateChart = myChart.data.labels[myChart.data.labels.length - 1];
     let lastDateSplited = lastDateChart.split("-");
     let lastDay = lastDateSplited[0];
+    
+    if (lastDay.length == 9) lastDay = "0" + lastDay;
     lastDay = `${lastDay.substring(6, 10)}/${lastDay.substring(3, 5)}/${lastDay.substring(0, 2)}`;
     let lastHour = lastDateSplited[1].split("h")[0];
 
@@ -214,6 +225,15 @@ function createPredict() {
     }
     Promise.all(allPromises).then(
         (values) => {
+            for (let i = 0; i < 3; i++) {
+                myChart.data.labels.shift();
+            }
+            for (let dataset in myChart.data.datasets) {
+                for (let i = 0; i < 3; i++) {
+                    myChart.data.datasets[dataset].data.shift();
+                }
+            }
+            
             myChart.update();
             console.log("Previsão criada.");
         })
@@ -246,9 +266,6 @@ function createPredictUsingDataset(datasetPosArr, dataset) {
                 chartBorderColor.push("#FA7F08");
 
                 myChart.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
-                myChart.data.datasets[datasetPosArr].borderColor = chartBorderColor;
-/*                 myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
-                /* myChart.data.datasets[datasetPosArr].backgroundColor = chartBorderColor; */
             }
         }
         resolve("Finalizado");

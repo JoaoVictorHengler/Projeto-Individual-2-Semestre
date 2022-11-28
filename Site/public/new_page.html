@@ -23,7 +23,7 @@
         </div>
     
         <div style="width: 50vw;">
-            <table>
+            <table id="table-metric">
                 <tr>
                     <th>Métrica</th>
                     <th>Dia</th>
@@ -79,6 +79,15 @@
                     <td>20</td>
                 </tr>
             </table>
+            <div>
+                <p>Selecione:</p>
+                <select name="" id="labels" onChange="updateSelect()">
+                    <option value="0">Selecione uma data.</option>
+                </select>
+                <select name="" style="display: none;" id="metricas">
+                </select>
+            </div>
+            
         </div>
     </div>
     

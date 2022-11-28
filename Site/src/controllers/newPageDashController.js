@@ -33,7 +33,6 @@ async function getMeanHours(req, res) {
         date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
         response[`${date}`] = {};
         response[`${date}`][`${dataTime[i].onlyHour}`] = {};
-
         let dateMetrica = dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, date, dataTime[i].onlyHour, metricas);
         
         allPromises.push(dateMetrica);

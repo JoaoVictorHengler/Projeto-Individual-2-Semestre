@@ -7,13 +7,16 @@ const labels = [
     'June',
 ];
 
-var alert;
+var alert, allLabels = [], allData;
 
 const labelsTranslate = {
     "cpu_Utilizacao": "Utilização Da CPU",
     "cpu_Temperature": "Temperatura Da CPU",
     "ram_Usada": "Utilização Da Memória Ram",
     "disco_Usado": "Utilização Do Disco",
+    "disco_read_time": "Leitura Do Disco",
+    "disco_write_time": "Escrita Do Disco",
+    "cpu_Frequencia_Atual": "Frequência Da CPU",
 }
 
 
@@ -79,9 +82,6 @@ var myChart = new Chart(
             },]
         },
         options: {
-            interaction: {
-                mode: 'y'
-            }
         }
     }
 );
@@ -92,16 +92,16 @@ function updateTable() {
 }
 
 async function getDates() {
-    let res = await fetch("/npd/getInformationsByDateHour/1&1", {
+    let res = await fetch("/npd/getInformationsByDateHour/2&1", {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
         }
     });
     res = await res.json();
-
+    allData = res;
     console.log(res);
-    
+
     appendLabels(res);
     alert.close()
 
@@ -128,7 +128,7 @@ function findDataset(label) {
 
 function appendLabels(data) {
     let label;
-    
+
     for (let date in data) {
         let date2 = date.split("-");
         date2 = date2[2] + "/" + date2[1] + "/" + date2[0];
@@ -136,6 +136,8 @@ function appendLabels(data) {
             label = `${date2}-${hour}h`;
             if (myChart.data.labels.indexOf(label) == -1) {
                 myChart.data.labels.push(label);
+                allLabels.push(label);
+
             }
         }
     }
@@ -150,20 +152,87 @@ function separateChartData(data) {
         date2 = date2[2] + "/" + date2[1] + "/" + date2[0];
         for (let hour in data[date]) {
             for (let metric in data[date][hour]) {
-                if (metric == "cpu_Frequencia_Atual" || metric == "disco_read_time" || metric =="disco_write_time") continue;
+                if (metric == "cpu_Frequencia_Atual" || metric == "disco_read_time" || metric == "disco_write_time") continue;
                 let datasetPosArr = findDataset(labelsTranslate[metric]);
                 let myChartLabelPos = myChart.data.labels.indexOf(`${date2}-${hour}h`);
+
                 if (myChart.data.datasets[datasetPosArr].data[myChartLabelPos] === undefined) {
                     for (let i = myChart.data.datasets[datasetPosArr].data.length; i < myChartLabelPos; i++) {
                         myChart.data.datasets[datasetPosArr].data.push(null);
                     }
                 }
-                appendChartData(data[date][hour][metric].math.mean, metric);
+
+
+                if (data[date][hour][metric].math == undefined) appendChartData(null, metric);
+                else appendChartData(data[date][hour][metric].math.mean, metric);
             }
         }
     }
     console.log("Dados Adicionados.");
     myChart.update();
+    appendSelectDates();
+}
+
+function appendSelectDates() {
+    allLabels.forEach((label) => {
+        let option = document.createElement("option");
+        option.value = label;
+        option.innerHTML = label;
+        document.getElementById("labels").appendChild(option);
+    });
+}
+
+function updateSelect() {
+    let table = document.getElementById("table-metric");
+    table.innerHTML = `
+        <tr>
+            <th>Métrica</th>
+            <th>Dia</th>
+            <th>Média</th>
+            <th>Variação</th>
+            <th>Desvio</th>
+            <th>Mínimo</th>
+            <th>Máximo</th>
+        </tr>`;
+    
+    let label = document.getElementById("labels").value;
+    if (label == "0") return;
+
+    let date = label.split("-")[0];
+    date = date.split("/");
+    date = date[2] + "-" + date[1] + "-" + date[0];
+    let hour = label.split("-")[1].split("h")[0];
+    
+    Object.keys(allData[date][hour]).forEach((metric) => {
+        let metricValue = allData[date][hour][metric];
+        console.log(metricValue);
+        loadTable(metric, label, metricValue.math.mean, metricValue.math.variance, 
+            metricValue.math.standardDeviation);
+    });
+
+
+
+}
+
+function loadTable(metricName, date, mean, variance, std) {
+    let table = document.getElementById("table-metric");
+
+    let tr = document.createElement("tr");
+
+    tr.innerHTML = `
+                <td>${labelsTranslate[metricName]}</td>
+                <td>${date}</td>
+                <td>${mean.toFixed(1)}</td>
+                <td>${variance.toFixed(1)}</td>
+                <td>${std.toFixed(1)}</td>
+                <td>min</td>
+                <td>max</td>`;
+    table.appendChild(tr);
+
+
+
+
+
 }
 
 function appendChartData(value, metrica) {
@@ -201,7 +270,7 @@ function createNextDate() {
     let lastDateChart = myChart.data.labels[myChart.data.labels.length - 1];
     let lastDateSplited = lastDateChart.split("-");
     let lastDay = lastDateSplited[0];
-    
+
     if (lastDay.length == 9) lastDay = "0" + lastDay;
     lastDay = `${lastDay.substring(6, 10)}/${lastDay.substring(3, 5)}/${lastDay.substring(0, 2)}`;
     let lastHour = lastDateSplited[1].split("h")[0];
@@ -233,7 +302,7 @@ function createPredict() {
                     myChart.data.datasets[dataset].data.shift();
                 }
             }
-            
+
             myChart.update();
             console.log("Previsão criada.");
         })

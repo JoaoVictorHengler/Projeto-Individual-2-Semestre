@@ -50,84 +50,102 @@ async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, data, hora, metric
     let result = {}, resultFiltered = {};
     res.forEach((item, i) => {
         let metrica = metricas.find((metrica) => metrica.idMetrica == item.fkMetrica);
+        if (metrica.nomeMetrica != "cpu_Frequencia_Maxima" && metrica.nomeMetrica != "cpu_Frequencia_Minima" && metrica.nomeMetrica != "ram_Total" && metrica.nomeMetrica != "disco_Total") {
 
-        if (result[metrica.nomeMetrica] == undefined) {
-            result[metrica.nomeMetrica] = {};
-            resultFiltered[metrica.nomeMetrica] = {};
-        }
-        let date = new Date(item.onlyDay);
+            if (result[metrica.nomeMetrica] == undefined) {
+                result[metrica.nomeMetrica] = {};
+                resultFiltered[metrica.nomeMetrica] = {};
+            }
+            let date = new Date(item.onlyDay);
 
-        date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-        result[metrica.nomeMetrica][`${date}-${item.onlyHour}:${item.onlyMinutes}:${item.onlySeconds}`] = parseFloat(item.valorLeitura);
+            date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+
+            result[metrica.nomeMetrica][`${date}-${item.onlyHour}:${item.onlyMinutes}:${item.onlySeconds}`] = parseFloat(item.valorLeitura);
+        };
+
+
     });
 
     resultFiltered = reduceSeconds(result, resultFiltered);
 
     Object.keys(resultFiltered).forEach(
-        (metrica) => {
-            let item = resultFiltered[metrica];
-            let data = Object.keys(item).map((key) => {
-                return {
-                    date: key,
-                    mean: item[key].mean,
-                    variance: item[key].totalVariance,
-                    length: item[key].totalLength
-                }
-            });
-            let meanList = data.map((item) => {
-                return item.mean;
-            });
-            let math = getMathInformationsEnhanced(meanList);
-            resultFiltered[metrica] = {
-                math: math,
-                data: data
+        async (metrica) => {
+            if (metrica != "cpu_Frequencia_Maxima" && metrica != "cpu_Frequencia_Minima" && metrica != "ram_Total" && metrica != "disco_Total") {
+                let item = resultFiltered[metrica];
+
+                
+                    let data = Object.keys(item).map((key) => {
+                        return {
+                            date: key,
+                            mean: item[key].mean,
+                            variance: item[key].totalVariance,
+                            length: item[key].totalLength
+                        }
+                    });
+                    let meanList = data.map((item) => {
+                        return item.mean;
+                    });
+
+                    let math = getMathInformationsEnhanced(meanList);
+                    resultFiltered[metrica] = {
+                        math: math,
+                        data: data
+                    }
             }
+
+
+
+
         }
     )
-    
+
     return {
         date: data,
         hour: hora,
         result: resultFiltered
     };
+    
 }
 
 function reduceSeconds(result, resultFiltered) {
     let init = 0;
     for (let metrica in result) {
-        let listData = Object.keys(result[metrica]);
-        for (let i = 0; i < listData.length; i++) {
-            let totalVariance = 0;
-            let totalLength = 0;
-            if (i > 0) {
-                let item = listData[i];
+        if (metrica != "cpu_Frequencia_Maxima" && metrica != "cpu_Frequencia_Minima" && metrica != "ram_Total" && metrica != "disco_Total") {
+            let listData = Object.keys(result[metrica]);
+            for (let i = 0; i < listData.length; i++) {
 
-                let itemDate = new Date(item.split("-").join(" "));
-                let prevItemDate = new Date(listData[i - 1].split("-").join(" "));
-                if (`${itemDate.getHours()}:${itemDate.getMinutes()}` != 
-                `${prevItemDate.getHours()}:${prevItemDate.getMinutes()}` ||
-                `${itemDate.getDate()}/${itemDate.getMonth()}/${itemDate.getFullYear()}` != 
-                `${prevItemDate.getDate()}/${prevItemDate.getMonth()}/${prevItemDate.getFullYear()}`) {
-                    let dateMeaned = `${prevItemDate.getDate()}/${prevItemDate.getMonth()}/${prevItemDate.getFullYear()} ${prevItemDate.getHours()}:${prevItemDate.getMinutes()}:00`;
-                    let allDataToMean = [];
-                    for (let j = i; j > init; j--) {
-                        allDataToMean.push(result[metrica][listData[j]]);
-                        totalLength++;
+                let totalLength = 0;
+                if (i > 0) {
+                    let item = listData[i];
 
-                    }   
-                    if (allDataToMean.length == 0) {
-                        allDataToMean.push(result[metrica][listData[i]]);
-                        totalLength++;
+                    let itemDate = new Date(item.split("-").join(" "));
+                    let prevItemDate = new Date(listData[i - 1].split("-").join(" "));
+                    if (`${itemDate.getHours()}:${itemDate.getMinutes()}` !=
+                        `${prevItemDate.getHours()}:${prevItemDate.getMinutes()}` ||
+                        `${itemDate.getDate()}/${itemDate.getMonth()}/${itemDate.getFullYear()}` !=
+                        `${prevItemDate.getDate()}/${prevItemDate.getMonth()}/${prevItemDate.getFullYear()}` ||
+                        i == listData.length - 1) {
+                        let dateMeaned = `${prevItemDate.getDate()}/${prevItemDate.getMonth()}/${prevItemDate.getFullYear()} ${prevItemDate.getHours()}:${prevItemDate.getMinutes()}:00`;
+                        let allDataToMean = [];
+                        for (let j = i; j > init; j--) {
+                            allDataToMean.push(result[metrica][listData[j]]);
+                            totalLength++;
+
+                        }
+                        if (allDataToMean.length == 0) {
+                            allDataToMean.push(result[metrica][listData[i]]);
+                            totalLength++;
+                        }
+                        let math = getMathInformationsEnhanced(allDataToMean);
+                        resultFiltered[metrica][dateMeaned] = {
+                            mean: math.mean, 
+                            totalLength: totalLength,
+                            totalVariance: math.variance,
+                        };
+
+
+                        init = i;
                     }
-                    let math = getMathInformationsEnhanced(allDataToMean);
-                    resultFiltered[metrica][dateMeaned] = {
-                        mean: math.mean,
-                        totalLength: totalLength,
-                        totalVariance: math.variance,
-                    };
-                    
-
-                    init = i;
                 }
             }
         }

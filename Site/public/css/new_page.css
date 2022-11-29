@@ -7,15 +7,25 @@ body {
     font-family: 'Nunito', 'Open Sans', sans-serif !important;
 }
 
-table,th, td {
-    border: 1px solid #000;
-    border-collapse: collapse;
+.table-metric-container, .chart-container {
+    width: 80vw;
 }
 
-td {
-    padding-right: 20px;
+.chart-container {
+    height: 300px;
 }
 
-#utilizacao-row td {
-    padding: 2px;
+.table-metric-container {
+    border-collapse: collapse !important;;
+}
+
+#sidebarMenu {
+    width: 0%;
+    display: none !important;
+}
+
+.table-metric-container td, .table-metric-container th {
+   /*  border: 1px solid #000 !important; */
+    padding-right: 10px;
+    padding-left: 10px;
 }

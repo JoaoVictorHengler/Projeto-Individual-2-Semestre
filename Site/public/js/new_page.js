@@ -19,84 +19,10 @@ const labelsTranslate = {
     "cpu_Frequencia_Atual": "Frequência Da CPU",
 }
 
-
-var myChart = new Chart(
-    document.getElementById('chart'),
-    {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                spanGaps: false,
-                label: 'Utilização Da CPU',
-                backgroundColor: 'rgba(1, 46, 64, 0.50)',
-                borderColor: 'rgba(1, 46, 64, 0.80)',
-                fill: true,
-                data: [],
-
-                lineTension: 0.3,
-                pointRadius: 2,
-                pointHitRadius: 100,
-                pointBorderWidth: 2,
-                borderRadius: 0.1
-
-            },
-            {
-                spanGaps: false,
-                label: 'Temperatura Da CPU',
-                backgroundColor: 'rgba(34, 187, 187, 0.50)',
-                borderColor: '#22BABB',
-                fill: true,
-                data: [],
-                lineTension: 0.3,
-                pointRadius: 2,
-                pointHitRadius: 100,
-                pointBorderWidth: 2,
-                borderRadius: 0.1
-            },
-            {
-                spanGaps: false,
-                label: 'Utilização Da Memória Ram',
-                backgroundColor: 'rgba(52, 136, 136, 0.50)',
-                borderColor: '#348888',
-                fill: true,
-                data: [],
-                lineTension: 0.3,
-                pointRadius: 2,
-                pointHitRadius: 100,
-                pointBorderWidth: 2,
-                borderRadius: 0.1
-            },
-            {
-                spanGaps: false,
-                label: 'Utilização Do Disco',
-                backgroundColor: 'rgba(158, 248, 238, 0.50)', // Alerta: #FA7F08 Crítico: #F24405
-                borderColor: '#9EF8EE',
-                fill: true,
-                data: [],
-                lineTension: 0.3,
-                pointRadius: 2,
-                pointHitRadius: 100,
-                pointBorderWidth: 2,
-                borderRadius: 0.1
-            },]
-        },
-        options: {
-        }
-    }
-);
-
-
-function updateTable() {
-
-}
-
 async function getDates() {
-    let res = await fetch("/npd/getInformationsByDateHour/2&1", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
+    let res = await fetch("/npd/getInformationsByDateHour/1&1", {
+        
+        
     });
     res = await res.json();
     allData = res;
@@ -119,8 +45,8 @@ function organizeDate(data) {
 }
 
 function findDataset(label) {
-    for (let i = 0; i < myChart.data.datasets.length; i++) {
-        if (myChart.data.datasets[i].label == label) {
+    for (let i = 0; i < chartAllDataMean.data.datasets.length; i++) {
+        if (chartAllDataMean.data.datasets[i].label == label) {
             return i;
         }
     }
@@ -134,14 +60,14 @@ function appendLabels(data) {
         date2 = date2[2] + "/" + date2[1] + "/" + date2[0];
         for (let hour in data[date]) {
             label = `${date2}-${hour}h`;
-            if (myChart.data.labels.indexOf(label) == -1) {
-                myChart.data.labels.push(label);
+            if (chartAllDataMean.data.labels.indexOf(label) == -1) {
+                chartAllDataMean.data.labels.push(label);
                 allLabels.push(label);
 
             }
         }
     }
-    myChart.update();
+    chartAllDataMean.update();
     console.log("Labels adicionadas.");
     separateChartData(data)
 }
@@ -154,11 +80,11 @@ function separateChartData(data) {
             for (let metric in data[date][hour]) {
                 if (metric == "cpu_Frequencia_Atual" || metric == "disco_read_time" || metric == "disco_write_time") continue;
                 let datasetPosArr = findDataset(labelsTranslate[metric]);
-                let myChartLabelPos = myChart.data.labels.indexOf(`${date2}-${hour}h`);
+                let chartAllDataMeanLabelPos = chartAllDataMean.data.labels.indexOf(`${date2}-${hour}h`);
 
-                if (myChart.data.datasets[datasetPosArr].data[myChartLabelPos] === undefined) {
-                    for (let i = myChart.data.datasets[datasetPosArr].data.length; i < myChartLabelPos; i++) {
-                        myChart.data.datasets[datasetPosArr].data.push(null);
+                if (chartAllDataMean.data.datasets[datasetPosArr].data[chartAllDataMeanLabelPos] === undefined) {
+                    for (let i = chartAllDataMean.data.datasets[datasetPosArr].data.length; i < chartAllDataMeanLabelPos; i++) {
+                        chartAllDataMean.data.datasets[datasetPosArr].data.push(null);
                     }
                 }
 
@@ -169,7 +95,7 @@ function separateChartData(data) {
         }
     }
     console.log("Dados Adicionados.");
-    myChart.update();
+    chartAllDataMean.update();
     appendSelectDates();
 }
 
@@ -182,18 +108,9 @@ function appendSelectDates() {
     });
 }
 
-function updateSelect() {
+function updateSelect() {   
     let table = document.getElementById("table-metric");
-    table.innerHTML = `
-        <tr>
-            <th>Métrica</th>
-            <th>Dia</th>
-            <th>Média</th>
-            <th>Variação</th>
-            <th>Desvio</th>
-            <th>Mínimo</th>
-            <th>Máximo</th>
-        </tr>`;
+    table.innerHTML = ``;
     
     let label = document.getElementById("labels").value;
     if (label == "0") return;
@@ -205,7 +122,6 @@ function updateSelect() {
     
     Object.keys(allData[date][hour]).forEach((metric) => {
         let metricValue = allData[date][hour][metric];
-        console.log(metricValue);
         loadTable(metric, label, metricValue.math.mean, metricValue.math.variance, 
             metricValue.math.standardDeviation);
     });
@@ -220,13 +136,16 @@ function loadTable(metricName, date, mean, variance, std) {
     let tr = document.createElement("tr");
 
     tr.innerHTML = `
-                <td>${labelsTranslate[metricName]}</td>
-                <td>${date}</td>
+                <td scope="row">${labelsTranslate[metricName]}</td>
                 <td>${mean.toFixed(1)}</td>
                 <td>${variance.toFixed(1)}</td>
                 <td>${std.toFixed(1)}</td>
                 <td>min</td>
                 <td>max</td>`;
+    tr.onclick = () => {
+        selectMetric(metricName, date);
+    }
+    tr.style.cursor = "pointer";
     table.appendChild(tr);
 
 
@@ -237,7 +156,7 @@ function loadTable(metricName, date, mean, variance, std) {
 
 function appendChartData(value, metrica) {
     let dataset_num = findDataset(labelsTranslate[metrica]);
-    myChart.data.datasets[dataset_num].data.push(value);
+    chartAllDataMean.data.datasets[dataset_num].data.push(value);
 }
 
 function getMeanGraphAngle(data) {
@@ -267,7 +186,7 @@ function getMeanGraphAngle(data) {
 }
 
 function createNextDate() {
-    let lastDateChart = myChart.data.labels[myChart.data.labels.length - 1];
+    let lastDateChart = chartAllDataMean.data.labels[chartAllDataMean.data.labels.length - 1];
     let lastDateSplited = lastDateChart.split("-");
     let lastDay = lastDateSplited[0];
 
@@ -286,24 +205,24 @@ function createNextDate() {
 function createPredict() {
     for (let i = 0; i < 5; i++) {
         let nextDate = createNextDate();
-        myChart.data.labels.push(nextDate);
+        chartAllDataMean.data.labels.push(nextDate);
     }
     let allPromises = [];
-    for (let dataset in myChart.data.datasets) {
-        allPromises.push(createPredictUsingDataset(dataset, myChart.data.datasets[dataset]));
+    for (let dataset in chartAllDataMean.data.datasets) {
+        allPromises.push(createPredictUsingDataset(dataset, chartAllDataMean.data.datasets[dataset]));
     }
     Promise.all(allPromises).then(
         (values) => {
             for (let i = 0; i < 3; i++) {
-                myChart.data.labels.shift();
+                chartAllDataMean.data.labels.shift();
             }
-            for (let dataset in myChart.data.datasets) {
+            for (let dataset in chartAllDataMean.data.datasets) {
                 for (let i = 0; i < 3; i++) {
-                    myChart.data.datasets[dataset].data.shift();
+                    chartAllDataMean.data.datasets[dataset].data.shift();
                 }
             }
 
-            myChart.update();
+            chartAllDataMean.update();
             console.log("Previsão criada.");
         })
 
@@ -326,7 +245,7 @@ function createPredictUsingDataset(datasetPosArr, dataset) {
                 let meanAngle = getMeanGraphAngle(graph);
                 let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
 
-                myChart.data.datasets[datasetPosArr].data.push(predict);
+                chartAllDataMean.data.datasets[datasetPosArr].data.push(predict);
 
                 let chartBorderColor = [];
                 for (let i = 0; i < dataset.data.length - 1; i++) {
@@ -334,14 +253,13 @@ function createPredictUsingDataset(datasetPosArr, dataset) {
                 }
                 chartBorderColor.push("#FA7F08");
 
-                myChart.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
+                chartAllDataMean.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
             }
         }
         resolve("Finalizado");
         /* reject("Erro"); */
     });
 }
-
 
 /*  */
 alert = swal.fire({
@@ -351,27 +269,50 @@ alert = swal.fire({
         getDates();
     }
 })
+
+/* Selecionar métrica */
+/* -------------------------------------------------------------------------- */
+function selectMetric(metric, day) {
+
+    day = day.split("-");
+    date = day[0].split("/");
+    date = `${date[2]}-${date[1]}-${date[0]}`;
+    hour = day[1].split("h")[0];
+
+    console.log("Dia: " + date);
+    console.log("Hora: " + hour);
+    console.log("Métrica: " + metric);
+    let metricData = allData[date][hour][metric].data;
+    /* chartSpecificData.data.datasets[0].label = metric; */
+
+    for (let i = 0; i < metricData.length; i++) {
+        let element = metricData[i];
+        let label = element.date.substring(0, element.date.length - 3);
+
+        chartSpecificData.data.labels.push(label);
+        chartSpecificData.data.datasets[0].data.push(element.mean);
+        chartSpecificData.data.datasets[1].data.push(element.stdError);
+    }
+    chartSpecificData.update();
+}
+
+async function createPredictWithMl() {
+    let res = await fetch("http://localhost:5000/npd/predictWithMl", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            fkEmpresa: 1,
+            fkMaquina: 1
+        })
+    });
+    let json = await res.json();
+    console.log(json)
+}
 /* var mySlider = new rSlider({
     target: '#sampleSlider',
     values: [2008, 2009, 2010, 2011],
     range: true // range slider
 }); */
 
-/* Datepicker */
-/* for (let i = 0; i < datepickers.length; i++) {
-        let date = datesSorted[datesSorted.length - 1];
-
-        if (datepickers[i] == "#datepicker1") date = datesSorted[0];
-
-        $(datepickers[i]).datepicker({
-            multidate: false,
-            format: 'dd/mm/yyyy',
-            language: "pt-BR",
-            beforeShowDay: (date) => {
-                let dmy = date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear();
-                if (datesSorted.indexOf(dmy) != -1) return true;
-                else return false;
-            }
-        })
-        $(datepickers[i]).datepicker("setDate", date);
-    } */

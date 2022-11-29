@@ -1,4 +1,5 @@
 var database = require("../database/config");
+const MLR = require("ml-regression-multivariate-linear");
 const math = require("mathjs");
 
 async function getDados(nomeEmpresa, nomeMaquina, nomeMetrica) {
@@ -21,7 +22,7 @@ async function getView(nomeEmpresa, nomeMaquina, nomeMetrica, order, limit) {
 }
 
 async function getMetricas() {
-    return database.executar(
+    return await database.executar(
         `SELECT * FROM Metrica`
     );
 }
@@ -79,7 +80,8 @@ async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, data, hora, metric
                             date: key,
                             mean: item[key].mean,
                             variance: item[key].totalVariance,
-                            length: item[key].totalLength
+                            stdError: item[key].totalStandardDeviationError,
+                            length: item[key].totalLength,
                         }
                     });
                     let meanList = data.map((item) => {
@@ -92,10 +94,6 @@ async function getMetricaInfoByDateHour(fkEmpresa, fkMaquina, data, hora, metric
                         data: data
                     }
             }
-
-
-
-
         }
     )
 
@@ -141,6 +139,7 @@ function reduceSeconds(result, resultFiltered) {
                             mean: math.mean, 
                             totalLength: totalLength,
                             totalVariance: math.variance,
+                            totalStandardDeviationError: math.standardDeviation
                         };
 
 
@@ -244,11 +243,18 @@ function getMathInformationsEnhanced(data) {
         standardDeviation: math.round(math.std(data), 3),
     }
 }
+/* ---------------------------------------------------------------------------------------------------------- */
+function predictWithMl(data) {
+    let model = new MLR(data);
+    let result = model.predict(data.length + 1);
+    return result;
 
+}
 module.exports = {
     getDados,
     getView,
     getMetricas,
     getMetricaInfoByDateHour,
-    getDataTime
+    getDataTime,
+    predictWithMl
 } 

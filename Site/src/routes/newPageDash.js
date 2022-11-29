@@ -8,7 +8,7 @@ var dashController = require("../controllers/newPageDashController");
 }) */
 /* Novo */
 router.get("/getInformationsByDateHour/:fkMaquina&:fkEmpresa", function(req, res) {
-    dashController.getMeanHours(req, res)
+    dashController.getMeanHours(req, res);
 })
 router.get("/teste/?msg=:msg", function(req, res) {
     res.json(
@@ -16,6 +16,10 @@ router.get("/teste/?msg=:msg", function(req, res) {
             "msg": req.params.msg
         }
     )
+})
+
+router.get("/predictWithMl", (req, res) => {
+    dashController.predictWithMl(req, res);
 })
 
 module.exports = router

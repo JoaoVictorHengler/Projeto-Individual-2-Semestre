@@ -15,7 +15,7 @@ async function getDados(req, res) {
    Tempo Novo: ~6.84s
    Diferença de ~38% na velocidade
 */
-async function getMeanHours(req, res) {
+async function getMeanHours(req, res, type=null) {
     
     let inicio = new Date();
     console.log("Inicio: " + `${inicio.getHours()}:${inicio.getMinutes()}:${inicio.getSeconds()}`);
@@ -45,10 +45,33 @@ async function getMeanHours(req, res) {
         let fim = new Date();
         console.log("Fim: " + `${fim.getHours()}:${fim.getMinutes()}:${fim.getSeconds()}`);
         console.log("Tempo: " + (fim.getTime() - inicio.getTime()) / 1000 + "s");
-        res.json(response);
+        if (type==null) res.json(response);
+        else return response;
     });
 }
+
+async function predictWithMl(req, res) {    
+    let response = {};
+    let data = getMeanHours(req, res, "predict")
+    let predictDataArray = {};
+    for (let date in data) {
+        for (let hour in data[date]) {
+            for (let metrica in data[date][hour]) {
+                if (predictDataArray[metrica] == undefined) predictDataArray[metrica] = [];
+                predictDataArray[metrica].push(data[date][hour][metrica].math.mean);  
+            }
+        }
+    }
+
+    for (let metrica in predictDataArray) {
+        response[metrica] = await dashModel.predictWithMl(predictDataArray[metrica]);
+    }
+
+    res.json(response);
+}
+
 module.exports = {
     getDados,
-    getMeanHours
+    getMeanHours,
+    predictWithMl
 }

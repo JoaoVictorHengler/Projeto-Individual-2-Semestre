@@ -7,6 +7,7 @@ var dashController = require("../controllers/newPageDashController");
     dashController.getDataDate(req, res)
 }) */
 /* Novo */
+
 router.get("/getInformationsByDateHour/:fkMaquina&:fkEmpresa", function(req, res) {
     dashController.getMeanHours(req, res);
 })
@@ -18,7 +19,7 @@ router.get("/teste/?msg=:msg", function(req, res) {
     )
 })
 
-router.get("/predictWithMl", (req, res) => {
+router.get("/predictWithMl/:fkMaquina&:fkEmpresa", (req, res) => {
     dashController.predictWithMl(req, res);
 })
 

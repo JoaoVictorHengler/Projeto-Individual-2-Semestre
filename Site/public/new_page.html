@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -9,6 +10,7 @@
         integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
     <title> Projeto Individual | Pardalis</title>
 </head>
+
 <body>
     <!-- <input type="text" id="sampleSlider"/> -->
     <header class="sticky-top bg-dark d-flex m-0 p-0 vw-auto shadow d-flex justify-content-between">
@@ -29,7 +31,8 @@
                         <p class="h5 text-muted fw-bolder">Dashboards</p>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active h6 p-2 m-0" style="width: fit-content;" href="./dashboard.html">Home</a>
+                        <a class="nav-link active h6 p-2 m-0" style="width: fit-content;"
+                            href="./dashboard.html">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active h6 p-2 m-0" style="width: fit-content;" href="./dados-gerais.html">
@@ -58,22 +61,36 @@
             </div>
         </nav>
 
-        <div style="display: flex; flex-direction: column; width: auto;">
-            <div style="display: flex; width: 100%;">
+        <div style="display: flex; flex-direction: column; width: auto; padding-left: 50px;">
+            <div class="display-6 mt-4 mb-1">
+                <span id="server-name">Maquina1</span>
+                <div class="h5">Hash:<span id="server-num">31219249190</span></div>
+            </div>
+            <div class="d-flex my-2 mb-4 w-100 flex-row-reverse">
+                <button class="btn btn-primary py-1 px-2 ms-2" onclick="startPredictWithMl()"
+                    style="height: fit-content;">Create Predict With Linear Model</button>
+                <button class="btn btn-primary py-1 px-2" onclick="createPredict()"
+                    style="height: fit-content;">Create Predict</button>
+            </div>
+            <div class="d-flex w-100 mb-5">
                 <div class="chart-container">
                     <canvas id="chart"></canvas>
                 </div>
-                <button class="btn btn-primary py-1 px-2"  onclick="createPredict()" style="height: fit-content;">Create Predict</button>
-                <button class="btn btn-primary py-1 px-2"  onclick="createPredictWithMl()" style="height: fit-content;">Create Predict With Ml</button>
-
             </div>
-            <div class="table-metric-container">
-                <table class="table table-hover">
+            <div class="divider"></div>
+            <div class="table-metric-container mt-5">
+                <div class="d-flex align-items-center mb-4">
+                    <p class="h5">Selecione uma data para que você possa visualizar os dados daquele dia:</p>
+                    <select name="" class="ms-2 h-auto h6" id="labels" onChange="updateSelect()">
+                        <option value="0">Selecione uma data.</option>
+                    </select>
+                </div>
+                <table class="table table-hover mb-5">
                     <thead>
                         <tr>
                             <th scope="col">Métrica</th>
                             <th scope="col">Média</th>
-                            <th scope="col">Variação</th>
+                            <th scope="col">Variância</th>
                             <th scope="col">Desvio</th>
                             <th scope="col">Mínimo</th>
                             <th scope="col">Máximo</th>
@@ -83,18 +100,10 @@
 
                     </tbody>
                 </table>
-                <div>
-                    <p>Selecione:</p>
-                    <select name="" id="labels" onChange="updateSelect()">
-                        <option value="0">Selecione uma data.</option>
-                    </select>
-                    <select name="" style="display: none;" id="metricas">
-                    </select>
-                </div>
-                
+
             </div>
-            <div style="display: flex;">
-                <div style="width: 50vw;">
+            <div class="d-flex w-100">
+                <div class="chart-container">
                     <canvas id="chart2"></canvas>
                 </div>
             </div>
@@ -102,16 +111,16 @@
 
         <div class="p-0 center flex-column align-items-center" style="width: 85%;">
 
-        
+
 
         </div>
     </div>
-    
-    
-    
 
 
-    
+
+
+
+
 </body>
 <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -120,4 +129,5 @@
 <script src="./js/rSlider.min.js"></script>
 <script src="./js/new_page_charts.js"></script>
 <script src="./js/new_page.js"></script>
+
 </html>

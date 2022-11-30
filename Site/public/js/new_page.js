@@ -19,39 +19,35 @@ const labelsTranslate = {
     "cpu_Frequencia_Atual": "Frequência Da CPU",
 }
 
+/* 
+    ---------------------------------------------------------------------------------
+                            Carrega o gráfico com as médias e os diasw
+    ---------------------------------------------------------------------------------
+*/
+
+
+/* Faz as requisi;óes dos dados do gráfico */
 async function getDates() {
     let res = await fetch("/npd/getInformationsByDateHour/1&1", {
-        
-        
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
     });
     res = await res.json();
-    allData = res;
+    allData = res.response;
     console.log(res);
 
-    appendLabels(res);
+    appendLabels(res.response);
+    loadMachineInfo();
     alert.close()
-
 }
 
-function organizeDate(data) {
-    let objectKeysDate = Object.keys(data);
-    objectKeysDate = objectKeysDate.reverse();
-    let newData = {};
-    for (let i = 0; i < objectKeysDate.length; i++) {
-        newData[objectKeysDate[i]] = data[objectKeysDate[i]];
-    }
-
-    return newData;
+function loadMachineInfo() {
+    /* Atualizar o nome da maquina e a hash */
 }
 
-function findDataset(label) {
-    for (let i = 0; i < chartAllDataMean.data.datasets.length; i++) {
-        if (chartAllDataMean.data.datasets[i].label == label) {
-            return i;
-        }
-    }
-}
-
+/* Adiciona as labels no gráfico */
 function appendLabels(data) {
     let label;
 
@@ -72,6 +68,7 @@ function appendLabels(data) {
     separateChartData(data)
 }
 
+/* Separa os dados, para que possa adicionar no gráfico */
 function separateChartData(data) {
     for (let date in data) {
         let date2 = date.split("-");
@@ -99,6 +96,22 @@ function separateChartData(data) {
     appendSelectDates();
 }
 
+/* Procura o dataset através de sua label */
+function findDataset(label) {
+    for (let i = 0; i < chartAllDataMean.data.datasets.length; i++) {
+        if (chartAllDataMean.data.datasets[i].label == label) {
+            return i;
+        }
+    }
+}
+
+/* Adiciona um valor em algum dataset */
+function appendChartData(value, metrica) {
+    let dataset_num = findDataset(labelsTranslate[metrica]);
+    chartAllDataMean.data.datasets[dataset_num].data.push(value);
+}
+
+/* Adiciona as datas e horas disponíveis no gráfico para poder verificar a sua media, variancia e desvio padrão */
 function appendSelectDates() {
     allLabels.forEach((label) => {
         let option = document.createElement("option");
@@ -108,12 +121,25 @@ function appendSelectDates() {
     });
 }
 
+
+/* 
+    ---------------------------------------------------------------------------------
+                            Atualizar Select do HTML
+    ---------------------------------------------------------------------------------
+*/
+
+/* Faz a manipulação da tabela e da hora para adicionar os gráficos na tablea */
 function updateSelect() {   
     let table = document.getElementById("table-metric");
     table.innerHTML = ``;
     
     let label = document.getElementById("labels").value;
-    if (label == "0") return;
+    if (label == "0") {
+        clearChart();
+        document.getElementById("chart2").style.opacity = "";
+        return;
+    }
+    
 
     let date = label.split("-")[0];
     date = date.split("/");
@@ -126,10 +152,9 @@ function updateSelect() {
             metricValue.math.standardDeviation);
     });
 
-
-
 }
 
+/* Gera um elemento tr para adicionar uma nova linha na tabela */
 function loadTable(metricName, date, mean, variance, std) {
     let table = document.getElementById("table-metric");
 
@@ -147,18 +172,78 @@ function loadTable(metricName, date, mean, variance, std) {
     }
     tr.style.cursor = "pointer";
     table.appendChild(tr);
-
-
-
-
-
 }
 
-function appendChartData(value, metrica) {
-    let dataset_num = findDataset(labelsTranslate[metrica]);
-    chartAllDataMean.data.datasets[dataset_num].data.push(value);
+
+/* 
+    ---------------------------------------------------------------------------------
+                Cria o predict através da média entre os pontos do gráfico
+    ---------------------------------------------------------------------------------
+*/
+
+/* Faz toda a parte inicial para poder criar um predict de um dataset */
+async function createPredict() {
+    for (let i = 0; i < 5; i++) {
+        let nextDate = createNextDate();
+        chartAllDataMean.data.labels.push(nextDate);
+    }
+    let allPromises = [];
+    for (let dataset in chartAllDataMean.data.datasets) {
+        allPromises.push(createPredictUsingDataset(dataset, chartAllDataMean.data.datasets[dataset]));
+    }
+    let values = await Promise.all(allPromises);
+    
+    removeLastDatasetData();
+
+    chartAllDataMean.update();
+    console.log("Previsão criada.");
 }
 
+/* Através do primeiro gráfico, irá criar uma nova data para adicionar na label*/
+function createNextDate() {
+    let lastDateChart = chartAllDataMean.data.labels[chartAllDataMean.data.labels.length - 1];
+    let lastDateSplited = lastDateChart.split("-");
+    let lastDay = lastDateSplited[0];
+
+    if (lastDay.length == 9) lastDay = "0" + lastDay;
+    lastDay = `${lastDay.substring(6, 10)}/${lastDay.substring(3, 5)}/${lastDay.substring(0, 2)}`;
+    let lastHour = lastDateSplited[1].split("h")[0];
+
+    let date = lastDay + " " + lastHour + ":00:00";
+    let newDate = new Date(date);
+    newDate.setHours(newDate.getHours() + 1);
+
+    newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}-${newDate.getHours()}h`;
+    return newDate;
+}
+
+/* Faz a manipulação dos dados para obter a média do ângulo dos pontos*/
+function createPredictUsingDataset(datasetPosArr, dataset) {
+    return new Promise((resolve, reject) => {
+        if (dataset.data.length > 0) {
+            for (let i = 0; i < 5; i++) {
+                let graph = [];
+                let lengthDataset = dataset.data.length;
+                let medianDataset = Math.floor(lengthDataset / 2);
+
+                for (let j = lengthDataset; j > medianDataset + i; j--) {
+                    if (dataset.data[j] != null && dataset.data[j - 1] != null) {
+                        graph.push([dataset.data[j - 1], dataset.data[j]]);
+                    }
+                }
+
+                let meanAngle = getMeanGraphAngle(graph);
+                let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
+
+                chartAllDataMean.data.datasets[datasetPosArr].data.push(predict);
+            }
+        }
+        resolve("Finalizado");
+        /* reject("Erro"); */
+    });
+}
+
+/* Pega a média dos angulos entre cada ponto do gráfico */
 function getMeanGraphAngle(data) {
     let graphAngles = [];
 
@@ -181,109 +266,53 @@ function getMeanGraphAngle(data) {
         }
     )
     totalAngle /= graphAngles.length;
-    console.log("Angulo médio do gráfico: " + totalAngle);
+    /* console.log("Angulo médio do gráfico: " + totalAngle); */
     return totalAngle;
 }
 
-function createNextDate() {
-    let lastDateChart = chartAllDataMean.data.labels[chartAllDataMean.data.labels.length - 1];
-    let lastDateSplited = lastDateChart.split("-");
-    let lastDay = lastDateSplited[0];
-
-    if (lastDay.length == 9) lastDay = "0" + lastDay;
-    lastDay = `${lastDay.substring(6, 10)}/${lastDay.substring(3, 5)}/${lastDay.substring(0, 2)}`;
-    let lastHour = lastDateSplited[1].split("h")[0];
-
-    let date = lastDay + " " + lastHour + ":00:00";
-    let newDate = new Date(date);
-    newDate.setHours(newDate.getHours() + 1);
-
-    newDate = `${newDate.getDate()}/${newDate.getMonth() + 1}/${newDate.getFullYear()}-${newDate.getHours()}h`;
-    return newDate;
-}
-
-function createPredict() {
-    for (let i = 0; i < 5; i++) {
-        let nextDate = createNextDate();
-        chartAllDataMean.data.labels.push(nextDate);
+/* Remove o primeiro valor dos dados do gráfico */
+function removeLastDatasetData() {
+    for (let i = 0; i < 3; i++) {
+        chartAllDataMean.data.labels.shift();
     }
-    let allPromises = [];
     for (let dataset in chartAllDataMean.data.datasets) {
-        allPromises.push(createPredictUsingDataset(dataset, chartAllDataMean.data.datasets[dataset]));
+        for (let i = 0; i < 3; i++) {
+            chartAllDataMean.data.datasets[dataset].data.shift();
+        }
     }
-    Promise.all(allPromises).then(
-        (values) => {
-            for (let i = 0; i < 3; i++) {
-                chartAllDataMean.data.labels.shift();
-            }
-            for (let dataset in chartAllDataMean.data.datasets) {
-                for (let i = 0; i < 3; i++) {
-                    chartAllDataMean.data.datasets[dataset].data.shift();
-                }
-            }
-
-            chartAllDataMean.update();
-            console.log("Previsão criada.");
-        })
-
 }
 
-function createPredictUsingDataset(datasetPosArr, dataset) {
-    return new Promise((resolve, reject) => {
-        if (dataset.data.length > 0) {
-            for (let i = 0; i < 5; i++) {
-                let graph = [];
-                let lengthDataset = dataset.data.length;
-                let medianDataset = Math.floor(lengthDataset / 2);
-
-                for (let j = lengthDataset; j > medianDataset + i; j--) {
-                    if (dataset.data[j] != null && dataset.data[j - 1] != null) {
-                        graph.push([dataset.data[j - 1], dataset.data[j]]);
-                    }
-                }
-
-                let meanAngle = getMeanGraphAngle(graph);
-                let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
-
-                chartAllDataMean.data.datasets[datasetPosArr].data.push(predict);
-
-                let chartBorderColor = [];
-                for (let i = 0; i < dataset.data.length - 1; i++) {
-                    chartBorderColor.push(dataset.borderColor);
-                }
-                chartBorderColor.push("#FA7F08");
-
-                chartAllDataMean.data.datasets[datasetPosArr].pointBackgroundColor = chartBorderColor;
-            }
+/* Inicio */
+function main() {
+    alert = swal.fire({
+        title: "Carregando...",
+        didOpen: () => {
+            Swal.showLoading()
+            getDates();
         }
-        resolve("Finalizado");
-        /* reject("Erro"); */
     });
 }
 
-/*  */
-alert = swal.fire({
-    title: "Carregando...",
-    didOpen: () => {
-        Swal.showLoading()
-        getDates();
-    }
-})
+main();
 
-/* Selecionar métrica */
-/* -------------------------------------------------------------------------- */
+
+/* 
+    ---------------------------------------------------------------------------------
+                            Selecionar Métrica na tabela  
+    ---------------------------------------------------------------------------------
+*/
+
+/* Altera a opacidade do gráfico, manipula o dia para funcionar os dados e adiciona os dados no outro gráfico*/
 function selectMetric(metric, day) {
-
+    clearChart();
+    let chart = document.getElementById('chart2');
+    if (chart.style.opacity == '') chart.style.opacity = '1';
     day = day.split("-");
     date = day[0].split("/");
     date = `${date[2]}-${date[1]}-${date[0]}`;
     hour = day[1].split("h")[0];
 
-    console.log("Dia: " + date);
-    console.log("Hora: " + hour);
-    console.log("Métrica: " + metric);
     let metricData = allData[date][hour][metric].data;
-    /* chartSpecificData.data.datasets[0].label = metric; */
 
     for (let i = 0; i < metricData.length; i++) {
         let element = metricData[i];
@@ -296,20 +325,69 @@ function selectMetric(metric, day) {
     chartSpecificData.update();
 }
 
-async function createPredictWithMl() {
-    let res = await fetch("http://localhost:5000/npd/predictWithMl", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            fkEmpresa: 1,
-            fkMaquina: 1
-        })
+/* Limpa o gráfico para outra métrica ser inserida */
+function clearChart() {
+    chartSpecificData.data.datasets.forEach((dataset) => {
+        dataset.data = [];
     });
-    let json = await res.json();
-    console.log(json)
+    chartSpecificData.data.labels = [];
+    chartSpecificData.update();
 }
+
+
+/* 
+    ---------------------------------------------------------------------------------
+            Criar predict através de uma machine learning de modelo linear
+    ---------------------------------------------------------------------------------
+*/
+
+
+/* Inicia a requisição dos dados, junto com o SweetAlert */
+function startPredictWithMl() {
+    alert = swal.fire({
+        title: "Carregando...",
+        didOpen: async () => {
+            Swal.showLoading()
+            createPredictWithMl();
+        }
+    })
+}
+
+/* Faz a requisição e adiciona os valores no gráfico */
+async function createPredictWithMl() {
+    let res = await fetch(`http://localhost:3000/npd/predictWithMl/${1}&${1}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            });
+    let json = await res.json();
+    alert.close();
+    console.log(json);
+
+    for (let i = 0; i < 5; i++) {
+        let nextDate = createNextDate();
+        chartAllDataMean.data.labels.push(nextDate);
+    }
+
+    appendPredictWithMlData(json);
+
+    removeLastDatasetData(); 
+    chartAllDataMean.update();
+}
+
+function appendPredictWithMlData(json) {
+    for (let metrica in json) {
+        let dataset = chartAllDataMean.data.datasets.filter(x => {return x.label == labelsTranslate[metrica]});
+
+        if (dataset.length > 0) {
+            for (let data in json[metrica]) {
+                dataset[0].data.push(json[metrica][data]);
+            }
+        }
+    }
+}
+
 /* var mySlider = new rSlider({
     target: '#sampleSlider',
     values: [2008, 2009, 2010, 2011],

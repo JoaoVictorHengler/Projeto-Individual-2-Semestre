@@ -15,16 +15,24 @@ async function getDados(req, res) {
    Tempo Novo: ~6.84s
    Diferença de ~38% na velocidade
 */
-async function getMeanHours(req, res, type=null) {
-    
+async function getMeanHours(req, res, type="get") {
     let inicio = new Date();
     console.log("Inicio: " + `${inicio.getHours()}:${inicio.getMinutes()}:${inicio.getSeconds()}`);
     let fkMaquina = req.params.fkMaquina;
     let fkEmpresa = req.params.fkEmpresa;
+
+    if (fkMaquina == undefined) {
+        res.status(400).json({ "result": "fkMaquina não foi passado como parâmetro" });
+        return { "result": "fkMaquina não foi passado como parâmetro" };
+    } else if (fkEmpresa == undefined) {
+        res.status(400).json({ "result": "fkEmpresa não foi passado como parâmetro" });
+        return { "result": "fkEmpresa não foi passado como parâmetro" };
+    }
     
     let allPromises = [];
     let metricas = await dashModel.getMetricas();
     let dataTime = await dashModel.getDataTime(fkEmpresa, fkMaquina);
+    let machineInfo = await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina);
 
     let response = {};
 
@@ -38,33 +46,50 @@ async function getMeanHours(req, res, type=null) {
         allPromises.push(dateMetrica);
     }
 
-    Promise.all(allPromises).then((values) => {
-        values.forEach((result) => {
-            response[`${result.date}`][`${result.hour}`] = result.result;
-        });
-        let fim = new Date();
-        console.log("Fim: " + `${fim.getHours()}:${fim.getMinutes()}:${fim.getSeconds()}`);
-        console.log("Tempo: " + (fim.getTime() - inicio.getTime()) / 1000 + "s");
-        if (type==null) res.json(response);
-        else return response;
+    let values = await Promise.all(allPromises);
+    values.forEach((result) => {
+        response[`${result.date}`][`${result.hour}`] = result.result;
     });
+
+    if (type == "get") {
+        response = {
+            "nomeMaquina": machineInfo[0].nomeMaquina,
+            "hashMaquina": machineInfo[0].hashMaquina,
+            response: response
+        };
+    }
+    let fim = new Date();
+    console.log("Fim: " + `${fim.getHours()}:${fim.getMinutes()}:${fim.getSeconds()}`);
+    console.log("Tempo: " + (fim.getTime() - inicio.getTime()) / 1000 + "s");
+    console.log("Tipo: ", type);
+    if (type != "predict") res.json(response);    
+    else return response;
 }
 
 async function predictWithMl(req, res) {    
     let response = {};
-    let data = getMeanHours(req, res, "predict")
+    
+    let data = await getMeanHours(req, res, "predict")
     let predictDataArray = {};
     for (let date in data) {
+        
         for (let hour in data[date]) {
             for (let metrica in data[date][hour]) {
                 if (predictDataArray[metrica] == undefined) predictDataArray[metrica] = [];
-                predictDataArray[metrica].push(data[date][hour][metrica].math.mean);  
+                predictDataArray[metrica].push([data[date][hour][metrica].math.mean]);  
             }
         }
     }
 
+
     for (let metrica in predictDataArray) {
-        response[metrica] = await dashModel.predictWithMl(predictDataArray[metrica]);
+        for (let i = 0; i < 5; i++) {
+            /* console.log("Metrica: " + metrica); */
+            if (response[metrica] == undefined) response[metrica] = [];
+            let predictResult = await dashModel.predictWithMl(predictDataArray[metrica], metrica);
+            response[metrica].push(predictResult[0]);
+            predictDataArray[metrica].push(predictResult);
+        }
     }
 
     res.json(response);

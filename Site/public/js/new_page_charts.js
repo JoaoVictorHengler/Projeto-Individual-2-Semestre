@@ -60,10 +60,14 @@ var chartAllDataMean = new Chart(
                 y: {
                     ticks: {
                         stepSize: 50
-                     }
+                    }
                 }
-             },
-             maintainAspectRatio: false,
+            },
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
         }
     }
 );
@@ -97,13 +101,20 @@ var chartSpecificData = new Chart(
                 pointBorderWidth: 2,
                 borderRadius: 0.1
             }
-        ],
+            ],
+        },
         options: {
-            y: {
-                ticks: {
-                    stepSize: 50
+            scales: {
+                y: {
+                    ticks: {
+                        stepSize: 50
+                    }
                 }
-            }
+            },
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
         }
-    }
-});
+    });

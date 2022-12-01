@@ -10,10 +10,10 @@ const labels = [
 var alert, allLabels = [], allData;
 
 const labelsTranslate = {
-    "cpu_Utilizacao": "Utilização Da CPU",
-    "cpu_Temperature": "Temperatura Da CPU",
-    "ram_Usada": "Utilização Da Memória Ram",
-    "disco_Usado": "Utilização Do Disco",
+    "cpu_Utilizacao": "Média da Utilização Da CPU",
+    "cpu_Temperature": "Média da Temperatura Da CPU",
+    "ram_Usada": "Média da Utilização Da Memória Ram",
+    "disco_Usado": "Média da Utilização Do Disco",
     "disco_read_time": "Leitura Do Disco",
     "disco_write_time": "Escrita Do Disco",
     "cpu_Frequencia_Atual": "Frequência Da CPU",
@@ -39,12 +39,25 @@ async function getDates() {
     console.log(res);
 
     appendLabels(res.response);
-    loadMachineInfo();
+    loadMachineInfo(res.nomeMaquina, res.hashMaquina);
     alert.close()
 }
 
-function loadMachineInfo() {
+function loadMachineInfo(machineName, machineHash) {
     /* Atualizar o nome da maquina e a hash */
+    document.getElementById('server-name').innerHTML = machineName;
+
+    let macAddress = '';
+    machineHash = machineHash.split("");
+    for (let i = 2; i < machineHash.length; i += 2) {
+        if (i % 2 == 0) {
+            if (i == machineHash.length - 2) macAddress += machineHash[i - 1] + machineHash[i];
+            else macAddress += machineHash[i - 1] + machineHash[i] + ":";
+
+        }
+    }
+
+    document.getElementById('server-num').innerHTML = macAddress;
 }
 
 /* Adiciona as labels no gráfico */
@@ -134,9 +147,9 @@ function updateSelect() {
     table.innerHTML = ``;
     
     let label = document.getElementById("labels").value;
+    document.getElementById("chart-specific-metric").style.opacity = "";
+    clearChart();
     if (label == "0") {
-        clearChart();
-        document.getElementById("chart2").style.opacity = "";
         return;
     }
     
@@ -282,7 +295,19 @@ function removeLastDatasetData() {
     }
 }
 
-/* Inicio */
+function predict2() {
+    var worker = new Worker('./worker.js');
+    worker.onmessage = function (msg) {
+        this.postMessage(msg.data);
+    };
+    worker.postMessage({ data: 10 });
+}
+
+/* 
+    ---------------------------------------------------------------------------------
+                                        Inicio
+    ---------------------------------------------------------------------------------
+*/
 function main() {
     alert = swal.fire({
         title: "Carregando...",
@@ -305,7 +330,7 @@ main();
 /* Altera a opacidade do gráfico, manipula o dia para funcionar os dados e adiciona os dados no outro gráfico*/
 function selectMetric(metric, day) {
     clearChart();
-    let chart = document.getElementById('chart2');
+    let chart = document.getElementById('chart-specific-metric');
     if (chart.style.opacity == '') chart.style.opacity = '1';
     day = day.split("-");
     date = day[0].split("/");

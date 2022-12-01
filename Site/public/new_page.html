@@ -63,29 +63,33 @@
 
         <div style="display: flex; flex-direction: column; width: auto; padding-left: 50px;">
             <div class="display-6 mt-4 mb-1">
-                <span id="server-name">Maquina1</span>
-                <div class="h5">Hash:<span id="server-num">31219249190</span></div>
+                <span id="server-name">????????</span>
+                <div class="h5">Hash:<span id="server-num" class="ps-2">??????????</span></div>
             </div>
             <div class="d-flex my-2 mb-4 w-100 flex-row-reverse">
-                <button class="btn btn-primary py-1 px-2 ms-2" onclick="startPredictWithMl()"
-                    style="height: fit-content;">Create Predict With Linear Model</button>
-                <button class="btn btn-primary py-1 px-2" onclick="createPredict()"
-                    style="height: fit-content;">Create Predict</button>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <button class="btn btn-outline-primary py-1 px-2" onclick="createPredict()"
+                        style="height: fit-content;">Create Predict</button>
+                    <button class="btn btn-outline-primary py-1 px-2" onclick="startPredictWithMl()"
+                        style="height: fit-content;">Create Predict With Linear Model</button>
+                    
+                </div>
+
             </div>
-            <div class="d-flex w-100 mb-5">
+            <div class="d-flex w-100 mb-5 card p-4">
                 <div class="chart-container">
                     <canvas id="chart"></canvas>
                 </div>
             </div>
             <div class="divider"></div>
-            <div class="table-metric-container mt-5">
+            <div class="table-metric-container mt-5 card px-4 pt-4 pb-2 w-100">
                 <div class="d-flex align-items-center mb-4">
                     <p class="h5">Selecione uma data para que você possa visualizar os dados daquele dia:</p>
                     <select name="" class="ms-2 h-auto h6" id="labels" onChange="updateSelect()">
                         <option value="0">Selecione uma data.</option>
                     </select>
                 </div>
-                <table class="table table-hover mb-5">
+                <table class="table table-hover">
                     <thead>
                         <tr>
                             <th scope="col">Métrica</th>
@@ -102,7 +106,7 @@
                 </table>
 
             </div>
-            <div class="d-flex w-100">
+            <div class="d-flex w-100 card my-5 p-4" id="chart-specific-metric">
                 <div class="chart-container">
                     <canvas id="chart2"></canvas>
                 </div>

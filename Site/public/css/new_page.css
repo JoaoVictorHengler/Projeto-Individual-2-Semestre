@@ -9,7 +9,7 @@ body {
 
 .table-metric-container,
 .chart-container {
-    width: 80vw;
+    width: 75vw;
 }
 
 .chart-container {
@@ -44,7 +44,7 @@ body {
     padding-left: 10px;
 }
 
-#chart2 {
+#chart-specific-metric {
     opacity: 0;
 }
 

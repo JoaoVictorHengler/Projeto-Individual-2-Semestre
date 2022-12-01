@@ -15,7 +15,7 @@ async function getDados(req, res) {
    Tempo Novo: ~6.84s
    Diferença de ~38% na velocidade
 */
-async function getMeanHours(req, res, type="get") {
+async function getMeanHours(req, res, type = "get") {
     let inicio = new Date();
     console.log("Inicio: " + `${inicio.getHours()}:${inicio.getMinutes()}:${inicio.getSeconds()}`);
     let fkMaquina = req.params.fkMaquina;
@@ -28,55 +28,68 @@ async function getMeanHours(req, res, type="get") {
         res.status(400).json({ "result": "fkEmpresa não foi passado como parâmetro" });
         return { "result": "fkEmpresa não foi passado como parâmetro" };
     }
-    
+
     let allPromises = [];
+    
     let metricas = await dashModel.getMetricas();
-    let dataTime = await dashModel.getDataTime(fkEmpresa, fkMaquina);
-    let machineInfo = await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina);
+
+    let machineInfo = (await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina))[0];
+
+
+    await dashModel.createViewAllStats(fkEmpresa, fkMaquina, machineInfo.nomeEmpresa, machineInfo.nomeMaquina);
+
+    let data = await dashModel.getDataTime(machineInfo.nomeEmpresa, machineInfo.nomeMaquina);
+
+    data.map(
+        (item) => {
+            item.onlyDay = new Date(item.onlyDay)
+            item.onlyDay = `${item.onlyDay.getFullYear()}-${item.onlyDay.getMonth() + 1}-${item.onlyDay.getDate()}`;
+            return item;
+        }
+    )
 
     let response = {};
+    dashModel.getMetricaInfoByDateHour(machineInfo.nomeEmpresa, machineInfo.nomeMaquina, data, metricas);
 
-    for (let i = 0; i < dataTime.length; i++) {
-        let date = new Date(dataTime[i].onlyDay);
-        date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-        response[`${date}`] = {};
-        response[`${date}`][`${dataTime[i].onlyHour}`] = {};
-        let dateMetrica = dashModel.getMetricaInfoByDateHour(fkEmpresa, fkMaquina, date, dataTime[i].onlyHour, metricas);
-        
-        allPromises.push(dateMetrica);
-    }
+
+    /* data.forEach(
+        (item) => {
+            if (response[item.onlyDay] == undefined) response[item.onlyDay] = {};
+            if (response[item.onlyDay][item.onlyHour] == undefined) response[item.onlyDay][item.onlyHour] = {};
+            
+            
+        }
+    )
 
     let values = await Promise.all(allPromises);
     values.forEach((result) => {
         response[`${result.date}`][`${result.hour}`] = result.result;
     });
 
-    if (type == "get") {
-        response = {
-            "nomeMaquina": machineInfo[0].nomeMaquina,
-            "hashMaquina": machineInfo[0].hashMaquina,
-            response: response
-        };
-    }
+    if (type == "get") response = {
+        "nomeMaquina": machineInfo[0].nomeMaquina,
+        "hashMaquina": machineInfo[0].hashMaquina,
+        response: response
+    };
     let fim = new Date();
     console.log("Fim: " + `${fim.getHours()}:${fim.getMinutes()}:${fim.getSeconds()}`);
     console.log("Tempo: " + (fim.getTime() - inicio.getTime()) / 1000 + "s");
     console.log("Tipo: ", type);
-    if (type != "predict") res.json(response);    
-    else return response;
+    if (type != "predict") res.json(response);
+    else return response; */
 }
 
-async function predictWithMl(req, res) {    
+async function predictWithMl(req, res) {
     let response = {};
-    
+
     let data = await getMeanHours(req, res, "predict")
     let predictDataArray = {};
     for (let date in data) {
-        
+
         for (let hour in data[date]) {
             for (let metrica in data[date][hour]) {
                 if (predictDataArray[metrica] == undefined) predictDataArray[metrica] = [];
-                predictDataArray[metrica].push([data[date][hour][metrica].math.mean]);  
+                predictDataArray[metrica].push([data[date][hour][metrica].math.mean]);
             }
         }
     }

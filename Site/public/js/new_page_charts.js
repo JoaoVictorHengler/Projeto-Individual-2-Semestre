@@ -6,8 +6,9 @@ var chartAllDataMean = new Chart(
             labels: [],
             datasets: [{
                 spanGaps: false,
-                label: 'Utilização Da CPU',
-                borderColor: '#042940',
+                label: 'Média da Utilização Da CPU',
+                backgroundColor: '#00CCC0',
+                borderColor: '#00CCC0',
                 fill: false,
                 data: [],
 
@@ -20,8 +21,9 @@ var chartAllDataMean = new Chart(
             },
             {
                 spanGaps: false,
-                label: 'Temperatura Da CPU',
-                borderColor: '#005C53',
+                label: 'Média da Temperatura Da CPU',
+                backgroundColor: '#FF6F3B',
+                borderColor: '#FF6F3B',
                 fill: false,
                 data: [],
                 lineTension: 0.3,
@@ -32,8 +34,9 @@ var chartAllDataMean = new Chart(
             },
             {
                 spanGaps: false,
-                label: 'Utilização Da Memória Ram',
-                borderColor: '#9FC131',
+                label: 'Média da Utilização Da Memória Ram',
+                backgroundColor: '#FF4858',
+                borderColor: '#FF4858',
                 fill: false,
                 data: [],
                 lineTension: 0.3,
@@ -44,7 +47,8 @@ var chartAllDataMean = new Chart(
             },
             {
                 spanGaps: false,
-                label: 'Utilização Do Disco',
+                label: 'Média da Utilização Do Disco',
+                backgroundColor: '#DBF227',
                 borderColor: '#DBF227',
                 fill: false,
                 data: [],
@@ -60,6 +64,13 @@ var chartAllDataMean = new Chart(
                 y: {
                     ticks: {
                         stepSize: 50
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxTickLimit: 10,
+                        maxRotation: 0,
+                        minRotation: 0
                     }
                 }
             },
@@ -81,7 +92,8 @@ var chartSpecificData = new Chart(
             datasets: [{
                 spanGaps: false,
                 label: 'Média',
-                borderColor: '#042940',
+                backgroundColor: '#00CCC0',
+                borderColor: '#00CCC0',
                 fill: false,
                 data: [],
                 lineTension: 0.3,
@@ -92,7 +104,8 @@ var chartSpecificData = new Chart(
             }, {
                 spanGaps: false,
                 label: 'Desvio Padrão',
-                borderColor: '#005C53',
+                backgroundColor: '#FF4858',
+                borderColor: '#FF4858',
                 fill: false,
                 data: [],
                 lineTension: 0.3,
@@ -107,7 +120,15 @@ var chartSpecificData = new Chart(
             scales: {
                 y: {
                     ticks: {
-                        stepSize: 50
+                        stepSize: 50,
+                    }
+                },
+                x: {
+                    ticks: {
+                        stepSize: 25,
+                        maxTickLimit: 20,
+                        maxRotation: 0,
+                        minRotation: 0
                     }
                 }
             },

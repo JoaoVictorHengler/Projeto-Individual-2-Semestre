@@ -1,9 +1,12 @@
-SELECT Distinct fkMetrica, DATE(dataColeta), HOUR(dataColeta), MINUTE(dataColeta), 
-	(SELECT valorLeitura from `vw_sptech_servidor-sptech` as V2 
-    where DATE(V1.dataColeta) = DATE(V2.dataColeta) and
-    HOUR(V1.dataColeta) = HOUR(V2.dataColeta) and
-    MINUTE(V1.dataColeta) = MINUTE(V2.dataColeta) order by dataColeta desc limit 1)
- from `vw_sptech_servidor-sptech` AS V1 order by fkMetrica;
- SELECT Distinct fkMetrica, DATE(dataColeta), HOUR(dataColeta), MINUTE(dataColeta), SECOND(dataColeta), valorLeitura
- from `vw_sptech_servidor-sptech` AS V1 where valorLeitura != -500.00 order by fkMetrica;
+use pardalis;
+SELECT * FROM `vw_sptech_servidor-sptech`;
+
+CREATE OR REPLACE VIEW `vw_Sptech_Servidor-SPTECH` AS SELECT Distinct fkMetrica, date_format(dataColeta, '%Y-%m-%d') as 'diaInteiro', 
+    HOUR(dataColeta) as 'hora', MINUTE(dataColeta) as 'minuto', SECOND(dataColeta) as 'segundo',
+    valorLeitura FROM Leitura JOIN Metrica on idMetrica = fkMetrica and isEstatico = 0 WHERE fkEmpresa = 1 and fkMaquina = 1
+    and valorLeitura != -500.00 and
+    dataColeta > (
+		SELECT dataColeta from Leitura where  fkMaquina = 1 & fkEmpresa = 1 order by dataColeta desc limit 1
+    ) - interval 5 day;
+
  

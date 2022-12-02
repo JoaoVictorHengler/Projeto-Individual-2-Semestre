@@ -126,8 +126,20 @@ var chartSpecificData = new Chart(
                 pointHitRadius: 100,
                 pointBorderWidth: 2,
                 borderRadius: 0.1
-            }
-            ],
+            },
+            {
+                spanGaps: false,
+                label: 'Média',
+                backgroundColor: 'orange',
+                borderColor: 'orange',
+                fill: false,
+                data: [],
+                lineTension: 0.3,
+                pointRadius: 2,
+                pointHitRadius: 100,
+                pointBorderWidth: 2,
+                borderRadius: 0.1
+            }],
         },
         options: {
             scales: {

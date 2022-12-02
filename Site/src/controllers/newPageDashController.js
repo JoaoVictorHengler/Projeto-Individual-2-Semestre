@@ -28,13 +28,10 @@ async function getMeanHours(req, res, type = "get") {
         res.status(400).json({ "result": "fkEmpresa não foi passado como parâmetro" });
         return { "result": "fkEmpresa não foi passado como parâmetro" };
     }
-
-    let allPromises = [];
     
     let metricas = await dashModel.getMetricas();
 
     let machineInfo = (await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina))[0];
-
 
     await dashModel.createViewAllStats(fkEmpresa, fkMaquina, machineInfo.nomeEmpresa, machineInfo.nomeMaquina);
 
@@ -45,7 +42,7 @@ async function getMeanHours(req, res, type = "get") {
             item.onlyDay = new Date(item.onlyDay)
             item.onlyDay = `${item.onlyDay.getFullYear()}-${item.onlyDay.getMonth() + 1}-${item.onlyDay.getDate()}`;
             return item;
-        }
+        }   
     )
 
     let response = await dashModel.getMetricaInfoByDateHour(machineInfo.nomeEmpresa, machineInfo.nomeMaquina, data, metricas);
@@ -66,33 +63,16 @@ async function getMeanHours(req, res, type = "get") {
     console.log("Fim: " + `${fim.getHours()}:${fim.getMinutes()}:${fim.getSeconds()}`);
     console.log("Tempo: " + (fim.getTime() - inicio.getTime()) / 1000 + "s");
 
-    if (type == "get") response = {
-        "nomeMaquina": machineInfo.nomeMaquina,
-        "hashMaquina": machineInfo.hashMaquina,
-        response: response
-    };
-
-    if (type != "predict") res.json(response);
-    else return response; 
-
-    /* data.forEach(
-        (item) => {
-            if (response[item.onlyDay] == undefined) response[item.onlyDay] = {};
-            if (response[item.onlyDay][item.onlyHour] == undefined) response[item.onlyDay][item.onlyHour] = {};
-            
-            
-        }
-    )
-
-    let values = await Promise.all(allPromises);
-    values.forEach((result) => {
-        response[`${result.date}`][`${result.hour}`] = result.result;
-    });
-
-    
-    
-    console.log("Tipo: ", type);
-    */
+    if (type == "get") {
+        response = {
+            "nomeMaquina": machineInfo.nomeMaquina,
+            "hashMaquina": machineInfo.hashMaquina,
+            response: response
+        };
+        res.json(response);
+    } else {
+        return response;
+    }
 }
 
 async function predictWithMl(req, res) {

@@ -21,7 +21,7 @@ const labelsTranslate = {
 
 /* 
     ---------------------------------------------------------------------------------
-                            Carrega o gráfico com as médias e os diasw
+                            Carrega o gráfico com as médias e os dias
     ---------------------------------------------------------------------------------
 */
 
@@ -65,10 +65,8 @@ function appendLabels(data) {
     let label;
 
     for (let date in data) {
-        let date2 = date.split("-");
-        date2 = date2[2] + "/" + date2[1] + "/" + date2[0];
         for (let hour in data[date]) {
-            label = `${date2}-${hour}h`;
+            label = `${date}-${hour}h`;
             if (chartAllDataMean.data.labels.indexOf(label) == -1) {
                 chartAllDataMean.data.labels.push(label);
                 allLabels.push(label);
@@ -84,20 +82,17 @@ function appendLabels(data) {
 /* Separa os dados, para que possa adicionar no gráfico */
 function separateChartData(data) {
     for (let date in data) {
-        let date2 = date.split("-");
-        date2 = date2[2] + "/" + date2[1] + "/" + date2[0];
         for (let hour in data[date]) {
             for (let metric in data[date][hour]) {
                 if (metric == "cpu_Frequencia_Atual" || metric == "disco_read_time" || metric == "disco_write_time") continue;
                 let datasetPosArr = findDataset(labelsTranslate[metric]);
-                let chartAllDataMeanLabelPos = chartAllDataMean.data.labels.indexOf(`${date2}-${hour}h`);
+                let chartAllDataMeanLabelPos = chartAllDataMean.data.labels.indexOf(`${date}-${hour}h`);
 
                 if (chartAllDataMean.data.datasets[datasetPosArr].data[chartAllDataMeanLabelPos] === undefined) {
                     for (let i = chartAllDataMean.data.datasets[datasetPosArr].data.length; i < chartAllDataMeanLabelPos; i++) {
                         chartAllDataMean.data.datasets[datasetPosArr].data.push(null);
                     }
                 }
-
 
                 if (data[date][hour][metric].math == undefined) appendChartData(null, metric);
                 else appendChartData(data[date][hour][metric].math.mean, metric);
@@ -153,22 +148,20 @@ function updateSelect() {
         return;
     }
     
-
     let date = label.split("-")[0];
-    date = date.split("/");
-    date = date[2] + "-" + date[1] + "-" + date[0];
     let hour = label.split("-")[1].split("h")[0];
     
-    Object.keys(allData[date][hour]).forEach((metric) => {
-        let metricValue = allData[date][hour][metric];
-        loadTable(metric, label, metricValue.math.mean, metricValue.math.variance, 
-            metricValue.math.standardDeviation);
-    });
+    Object.keys(allData[date][hour]).forEach(
+        (metric) => {
+            let metricValue = allData[date][hour][metric];
+            loadTable(metric, date, hour, metricValue.math.mean, metricValue.math.standardDeviation, metricValue.math.min, metricValue.math.max);
+        });
+
 
 }
 
 /* Gera um elemento tr para adicionar uma nova linha na tabela */
-function loadTable(metricName, date, mean, variance, std) {
+function loadTable(metricName, date, hour, mean, std, min, max) {
     let table = document.getElementById("table-metric");
 
     let tr = document.createElement("tr");
@@ -176,12 +169,11 @@ function loadTable(metricName, date, mean, variance, std) {
     tr.innerHTML = `
                 <td scope="row">${labelsTranslate[metricName]}</td>
                 <td>${mean.toFixed(1)}</td>
-                <td>${variance.toFixed(1)}</td>
                 <td>${std.toFixed(1)}</td>
-                <td>min</td>
-                <td>max</td>`;
+                <td>${min.toFixed(1)}</td>
+                <td>${max.toFixed(1)}</td>`;
     tr.onclick = () => {
-        selectMetric(metricName, date);
+        selectMetric(metricName, date, hour);
     }
     tr.style.cursor = "pointer";
     table.appendChild(tr);
@@ -328,25 +320,24 @@ main();
 */
 
 /* Altera a opacidade do gráfico, manipula o dia para funcionar os dados e adiciona os dados no outro gráfico*/
-function selectMetric(metric, day) {
+function selectMetric(metric, date, hour) {
     clearChart();
     let chart = document.getElementById('chart-specific-metric');
     if (chart.style.opacity == '') chart.style.opacity = '1';
-    day = day.split("-");
-    date = day[0].split("/");
-    date = `${date[2]}-${date[1]}-${date[0]}`;
-    hour = day[1].split("h")[0];
 
-    let metricData = allData[date][hour][metric].data;
+    let metricElement = allData[date][hour][metric];
+    let metricData = metricElement.allDataHour;
+    console.log(metricElement)
+    Object.keys(metricData).reverse().forEach(
+        (minuteData) => {
 
-    for (let i = 0; i < metricData.length; i++) {
-        let element = metricData[i];
-        let label = element.date.substring(0, element.date.length - 3);
+            chartSpecificData.data.labels.push(minuteData);
+            chartSpecificData.data.datasets[0].data.push(metricData[minuteData]);
+            chartSpecificData.data.datasets[1].data.push(parseFloat((metricElement.math.mean - metricElement.math.standardDeviation).toFixed(1)));
+            chartSpecificData.data.datasets[2].data.push(parseFloat((metricElement.math.mean + metricElement.math.standardDeviation).toFixed(1)));
+        }
+    )
 
-        chartSpecificData.data.labels.push(label);
-        chartSpecificData.data.datasets[0].data.push(element.mean);
-        chartSpecificData.data.datasets[1].data.push(element.stdError);
-    }
     chartSpecificData.update();
 }
 

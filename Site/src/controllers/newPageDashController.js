@@ -48,9 +48,32 @@ async function getMeanHours(req, res, type = "get") {
         }
     )
 
-    let response = {};
-    dashModel.getMetricaInfoByDateHour(machineInfo.nomeEmpresa, machineInfo.nomeMaquina, data, metricas);
+    let response = await dashModel.getMetricaInfoByDateHour(machineInfo.nomeEmpresa, machineInfo.nomeMaquina, data, metricas);
+    let datesOrdened = Object.keys(response).sort(
+        (a, b) => {
+            return new Date(a) - new Date(b);
+        }
+    )
 
+    let response2 = {};
+    for (let date of datesOrdened) {
+        let dateFormated = new Date(date);
+        dateFormated = `${dateFormated.getDate()}/${dateFormated.getMonth() + 1}/${dateFormated.getFullYear()}`;
+        response2[dateFormated] = response[date];
+    }
+    response = response2;
+    let fim = new Date();
+    console.log("Fim: " + `${fim.getHours()}:${fim.getMinutes()}:${fim.getSeconds()}`);
+    console.log("Tempo: " + (fim.getTime() - inicio.getTime()) / 1000 + "s");
+
+    if (type == "get") response = {
+        "nomeMaquina": machineInfo.nomeMaquina,
+        "hashMaquina": machineInfo.hashMaquina,
+        response: response
+    };
+
+    if (type != "predict") res.json(response);
+    else return response; 
 
     /* data.forEach(
         (item) => {
@@ -66,17 +89,10 @@ async function getMeanHours(req, res, type = "get") {
         response[`${result.date}`][`${result.hour}`] = result.result;
     });
 
-    if (type == "get") response = {
-        "nomeMaquina": machineInfo[0].nomeMaquina,
-        "hashMaquina": machineInfo[0].hashMaquina,
-        response: response
-    };
-    let fim = new Date();
-    console.log("Fim: " + `${fim.getHours()}:${fim.getMinutes()}:${fim.getSeconds()}`);
-    console.log("Tempo: " + (fim.getTime() - inicio.getTime()) / 1000 + "s");
+    
+    
     console.log("Tipo: ", type);
-    if (type != "predict") res.json(response);
-    else return response; */
+    */
 }
 
 async function predictWithMl(req, res) {

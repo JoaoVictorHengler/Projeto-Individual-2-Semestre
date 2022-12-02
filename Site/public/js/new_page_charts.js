@@ -91,7 +91,7 @@ var chartSpecificData = new Chart(
             labels: [],
             datasets: [{
                 spanGaps: false,
-                label: 'Média',
+                label: 'Valor Leitura',
                 backgroundColor: '#00CCC0',
                 borderColor: '#00CCC0',
                 fill: false,
@@ -102,6 +102,19 @@ var chartSpecificData = new Chart(
                 pointBorderWidth: 2,
                 borderRadius: 0.1
             }, {
+                spanGaps: false,
+                label: 'Desvio Padrão',
+                backgroundColor: '#FF4858',
+                borderColor: '#FF4858',
+                fill: false,
+                data: [],
+                lineTension: 0.3,
+                pointRadius: 2,
+                pointHitRadius: 100,
+                pointBorderWidth: 2,
+                borderRadius: 0.1
+            },
+            {
                 spanGaps: false,
                 label: 'Desvio Padrão',
                 backgroundColor: '#FF4858',

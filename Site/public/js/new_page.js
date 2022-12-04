@@ -9,6 +9,8 @@ const labels = [
 
 var alert, allLabels = [], allData;
 
+let predictLock = false;
+
 const labelsTranslate = {
     "cpu_Utilizacao": "Média da Utilização Da CPU",
     "cpu_Temperature": "Média da Temperatura Da CPU",
@@ -18,7 +20,15 @@ const labelsTranslate = {
     "disco_write_time": "Escrita Do Disco",
     "cpu_Frequencia_Atual": "Frequência Da CPU",
 }
+var fkMaquina, fkEmpresa;
 
+function getParams() {
+    let url = new URL(window.location.href);
+    let params = url.searchParams;
+    fkMaquina = params.get("fkMaquina");
+    fkEmpresa = params.get("fkEmpresa");
+}
+getParams();
 /* 
     ---------------------------------------------------------------------------------
                             Carrega o gráfico com as médias e os dias
@@ -27,8 +37,9 @@ const labelsTranslate = {
 
 
 /* Faz as requisi;óes dos dados do gráfico */
+
 async function getDates() {
-    let res = await fetch("/npd/getInformationsByDateHour/1&1", {
+    let res = await fetch(`/npd/getInformationsByDateHour/${fkMaquina}&${fkEmpresa}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
@@ -188,6 +199,7 @@ function loadTable(metricName, date, hour, mean, std, min, max) {
 
 /* Faz toda a parte inicial para poder criar um predict de um dataset */
 async function createPredict() {
+    if (predictLock) return;
     for (let i = 0; i < 5; i++) {
         let nextDate = createNextDate();
         chartAllDataMean.data.labels.push(nextDate);
@@ -202,6 +214,7 @@ async function createPredict() {
 
     chartAllDataMean.update();
     console.log("Previsão criada.");
+    predictLock = true;
 }
 
 /* Através do primeiro gráfico, irá criar uma nova data para adicionar na label*/
@@ -236,7 +249,6 @@ function createPredictUsingDataset(datasetPosArr, dataset) {
                         graph.push([dataset.data[j - 1], dataset.data[j]]);
                     }
                 }
-
                 let meanAngle = getMeanGraphAngle(graph);
                 let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
 
@@ -277,22 +289,17 @@ function getMeanGraphAngle(data) {
 
 /* Remove o primeiro valor dos dados do gráfico */
 function removeLastDatasetData() {
-    for (let i = 0; i < 3; i++) {
-        chartAllDataMean.data.labels.shift();
-    }
-    for (let dataset in chartAllDataMean.data.datasets) {
+    if(chartAllDataMean.data.labels.length == 10){
         for (let i = 0; i < 3; i++) {
-            chartAllDataMean.data.datasets[dataset].data.shift();
+            chartAllDataMean.data.labels.shift();
+        }
+        for (let dataset in chartAllDataMean.data.datasets) {
+            for (let i = 0; i < 3; i++) {
+                chartAllDataMean.data.datasets[dataset].data.shift();
+            }
         }
     }
-}
-
-function predict2() {
-    var worker = new Worker('./worker.js');
-    worker.onmessage = function (msg) {
-        this.postMessage(msg.data);
-    };
-    worker.postMessage({ data: 10 });
+    
 }
 
 /* 
@@ -335,6 +342,7 @@ function selectMetric(metric, date, hour) {
             chartSpecificData.data.datasets[0].data.push(metricData[minuteData]);
             chartSpecificData.data.datasets[1].data.push(parseFloat((metricElement.math.mean - metricElement.math.standardDeviation).toFixed(1)));
             chartSpecificData.data.datasets[2].data.push(parseFloat((metricElement.math.mean + metricElement.math.standardDeviation).toFixed(1)));
+            chartSpecificData.data.datasets[3].data.push(metricElement.math.mean);
         }
     )
 
@@ -360,6 +368,7 @@ function clearChart() {
 
 /* Inicia a requisição dos dados, junto com o SweetAlert */
 function startPredictWithMl() {
+    if (predictLock) return;
     alert = swal.fire({
         title: "Carregando...",
         didOpen: async () => {
@@ -371,7 +380,7 @@ function startPredictWithMl() {
 
 /* Faz a requisição e adiciona os valores no gráfico */
 async function createPredictWithMl() {
-    let res = await fetch(`http://localhost:3000/npd/predictWithMl/${1}&${1}`, {
+    let res = await fetch(`http://localhost:3000/npd/predictWithMl/${fkMaquina}&${fkEmpresa}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json"
@@ -390,6 +399,7 @@ async function createPredictWithMl() {
 
     removeLastDatasetData(); 
     chartAllDataMean.update();
+    
 }
 
 function appendPredictWithMlData(json) {
@@ -398,10 +408,13 @@ function appendPredictWithMlData(json) {
 
         if (dataset.length > 0) {
             for (let data in json[metrica]) {
-                dataset[0].data.push(json[metrica][data]);
+                if (json[metrica][data] <= 0) dataset[0].data.push(0);
+                else dataset[0].data.push(json[metrica][data]);
+                
             }
         }
     }
+    predictLock = true;
 }
 
 /* var mySlider = new rSlider({

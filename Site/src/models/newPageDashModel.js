@@ -8,21 +8,13 @@ async function getMetricas() {
     );
 }
 
-async function getDataTime(nomeEmpresa, nomeMaquina) {
-    let res = await database.executar(`select Distinct diaInteiro, hora 
-    from `+ "`vw_" + nomeEmpresa + "_" + nomeMaquina + "`" + ` order by timestamp(CONCAT(diaInteiro, ' ', hora, ':', minuto, ':', segundo)) limit 24;`);
-
-    return res;
-}
-
 async function createViewAllStats(fkEmpresa, fkMaquina, nomeEmpresa, nomeMaquina) {
     let sql = "CREATE OR REPLACE VIEW" + " `vw_" + nomeEmpresa + "_" + nomeMaquina + "` ";
-    sql += `AS SELECT Distinct fkMetrica, date_format(dataColeta, '%Y-%m-%d') as 'diaInteiro', 
-    HOUR(dataColeta) as 'hora', MINUTE(dataColeta) as 'minuto', SECOND(dataColeta) as 'segundo',
-    valorLeitura FROM Leitura JOIN Metrica on idMetrica = fkMetrica and isEstatico = 0 WHERE fkEmpresa = ${fkEmpresa} and fkMaquina = ${fkMaquina}
-    and valorLeitura != -500.00 and dataColeta > 
-    (SELECT dataColeta from Leitura where  fkMaquina = 1 & fkEmpresa = 1 order by dataColeta desc limit 1) 
-    - interval 3 day order by dataColeta desc;`
+    sql += `AS SELECT Distinct fkMetrica, date_format(dataColeta, '%Y-%m-%d') AS 'diaInteiro', 
+    HOUR(dataColeta) AS 'hora', MINUTE(dataColeta) AS 'minuto', SECOND(dataColeta) AS 'segundo',
+    valorLeitura FROM Leitura JOIN Metrica ON idMetrica = fkMetrica AND isEstatico = 0 WHERE fkEmpresa = ${fkEmpresa} AND fkMaquina = ${fkMaquina}
+    AND valorLeitura != -500.00 AND dataColeta > (SELECT dataColeta FROM Leitura WHERE fkMaquina = ${fkMaquina} and fkEmpresa = ${fkEmpresa} ORDER BY dataColeta DESC LIMIT 1) 
+    - INTERVAL 3 DAY ORDER BY dataColeta DESC;`
     return await database.executar(sql);
 }
 
@@ -33,11 +25,8 @@ async function getDataByHour(nomeEmpresa, nomeMaquina) {
 }
 
 /* Novo */
-async function getMetricaInfoByDateHour(nomeEmpresa, nomeMaquina, data, metricas) {
-    /* let last24Hours = await database.executar(`
-    SELECT fkMetrica, diaInteiro, hora, minuto, segundo, valorLeitura
-    from ` + "`vw_" + nomeEmpresa + "_" + nomeMaquina + "`" + ` where diaInteiro = '${data}' order by fkMetrica`);
-    ; */
+async function getMetricaInfoByDateHour(nomeEmpresa, nomeMaquina, metricas) {
+
     let res = await getDataByHour(nomeEmpresa, nomeMaquina);
     let resultFiltered = {};
     
@@ -151,7 +140,6 @@ function predictWithMl(data) {
 module.exports = {
     getMetricas,
     getMetricaInfoByDateHour,
-    getDataTime,
     predictWithMl,
     createViewAllStats
 } 

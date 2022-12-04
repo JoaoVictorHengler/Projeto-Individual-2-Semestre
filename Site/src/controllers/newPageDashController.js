@@ -32,20 +32,10 @@ async function getMeanHours(req, res, type = "get") {
     let metricas = await dashModel.getMetricas();
 
     let machineInfo = (await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina))[0];
-
+    if (machineInfo == undefined) res.status(400).json({ "result": "fkMaquina não existe" });
     await dashModel.createViewAllStats(fkEmpresa, fkMaquina, machineInfo.nomeEmpresa, machineInfo.nomeMaquina);
 
-    let data = await dashModel.getDataTime(machineInfo.nomeEmpresa, machineInfo.nomeMaquina);
-
-    data.map(
-        (item) => {
-            item.onlyDay = new Date(item.onlyDay)
-            item.onlyDay = `${item.onlyDay.getFullYear()}-${item.onlyDay.getMonth() + 1}-${item.onlyDay.getDate()}`;
-            return item;
-        }   
-    )
-
-    let response = await dashModel.getMetricaInfoByDateHour(machineInfo.nomeEmpresa, machineInfo.nomeMaquina, data, metricas);
+    let response = await dashModel.getMetricaInfoByDateHour(machineInfo.nomeEmpresa, machineInfo.nomeMaquina, metricas);
     let datesOrdened = Object.keys(response).sort(
         (a, b) => {
             return new Date(a) - new Date(b);

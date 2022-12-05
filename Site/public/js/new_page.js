@@ -104,7 +104,7 @@ function separateChartData(data) {
                         chartAllDataMean.data.datasets[datasetPosArr].data.push(null);
                     }
                 }
-
+                /* if (chartAllDataMean.data.datasets[datasetPosArr].data.length >= 10)  */document.getElementById("predict-button").style.display = 'block';
                 if (data[date][hour][metric].math == undefined) appendChartData(null, metric);
                 else appendChartData(data[date][hour][metric].math.mean, metric);
             }
@@ -127,7 +127,11 @@ function findDataset(label) {
 /* Adiciona um valor em algum dataset */
 function appendChartData(value, metrica) {
     let dataset_num = findDataset(labelsTranslate[metrica]);
-    chartAllDataMean.data.datasets[dataset_num].data.push(value);
+    if (value != null) {
+        chartAllDataMean.data.datasets[dataset_num].data.push(parseFloat(value.toFixed(1)));
+    } else {
+        chartAllDataMean.data.datasets[dataset_num].data.push(null);
+    }
 }
 
 /* Adiciona as datas e horas disponíveis no gráfico para poder verificar a sua media, variancia e desvio padrão */
@@ -148,20 +152,20 @@ function appendSelectDates() {
 */
 
 /* Faz a manipulação da tabela e da hora para adicionar os gráficos na tablea */
-function updateSelect() {   
+function updateSelect() {
     let table = document.getElementById("table-metric");
     table.innerHTML = ``;
-    
+
     let label = document.getElementById("labels").value;
     document.getElementById("chart-specific-metric").style.opacity = "";
     clearChart();
     if (label == "0") {
         return;
     }
-    
+
     let date = label.split("-")[0];
     let hour = label.split("-")[1].split("h")[0];
-    
+
     Object.keys(allData[date][hour]).forEach(
         (metric) => {
             let metricValue = allData[date][hour][metric];
@@ -177,12 +181,35 @@ function loadTable(metricName, date, hour, mean, std, min, max) {
 
     let tr = document.createElement("tr");
 
+    let unidade;
+    if (metricName == "cpu_Frequencia_Atual") unidade = "MHz";
+    switch (metricName) {
+        case "cpu_Frequencia_Atual":
+            unidade = "MHz";
+            break;
+        case "cpu_Utilizacao":
+            unidade = "%";
+            break;
+        case "disco_read_time":
+            unidade = "Mb";
+            break;
+        case "disco_Usado":
+            unidade = "Gb";
+            break;
+        case "disco_write_time":
+            unidade = "Mb";
+            break;
+        case "ram_Usada":
+            unidade = "Gb";
+            break;
+        
+    }
     tr.innerHTML = `
                 <td scope="row">${labelsTranslate[metricName]}</td>
-                <td>${mean.toFixed(1)}</td>
-                <td>${std.toFixed(1)}</td>
-                <td>${min.toFixed(1)}</td>
-                <td>${max.toFixed(1)}</td>`;
+                <td>${mean.toFixed(1)} ${unidade}</td>
+                <td>${std.toFixed(1)} ${unidade}</td>
+                <td>${min.toFixed(1)} ${unidade}</td>
+                <td>${max.toFixed(1)} ${unidade}</td>`;
     tr.onclick = () => {
         selectMetric(metricName, date, hour);
     }
@@ -209,7 +236,7 @@ async function createPredict() {
         allPromises.push(createPredictUsingDataset(dataset, chartAllDataMean.data.datasets[dataset]));
     }
     let values = await Promise.all(allPromises);
-    
+
     removeLastDatasetData();
 
     chartAllDataMean.update();
@@ -239,21 +266,28 @@ function createNextDate() {
 function createPredictUsingDataset(datasetPosArr, dataset) {
     return new Promise((resolve, reject) => {
         if (dataset.data.length > 0) {
+
             for (let i = 0; i < 5; i++) {
+
                 let graph = [];
-                let lengthDataset = dataset.data.length;
+                let lengthDataset = dataset.data.length - 1;
                 let medianDataset = Math.floor(lengthDataset / 2);
 
-                for (let j = lengthDataset; j > medianDataset + i; j--) {
-                    if (dataset.data[j] != null && dataset.data[j - 1] != null) {
+                /* for (let j = medianDataset - i; j < lengthDataset; j++) { */
+                for (let j = lengthDataset; j >= medianDataset + i; j--) {
+
+                    if (dataset.data[j] != null && dataset.data[j - 1] != null && dataset.data[j - 1] != undefined) {
                         graph.push([dataset.data[j - 1], dataset.data[j]]);
                     }
                 }
+
                 let meanAngle = getMeanGraphAngle(graph);
+
                 let predict = (meanAngle * ((lengthDataset + 1) - lengthDataset)) + dataset.data[lengthDataset - 1];
 
-                chartAllDataMean.data.datasets[datasetPosArr].data.push(predict);
+                chartAllDataMean.data.datasets[datasetPosArr].data.push(parseFloat(predict.toFixed(1)));
             }
+            chartAllDataMean.update();
         }
         resolve("Finalizado");
         /* reject("Erro"); */
@@ -265,16 +299,14 @@ function getMeanGraphAngle(data) {
     let graphAngles = [];
 
     data.forEach((value, i, arr) => {
-        if (i > 0) {
-            let x1 = i - 1;
-            let y1 = value[0];
-            let x2 = i;
-            let y2 = value[1];
+        let x1 = i + 1;
+        let y1 = value[0];
+        let x2 = i + 2;
+        let y2 = value[1];
 
-            let a = (y2 - y1) / (x2 - x1);
+        let a = (y2 - y1) / (x2 - x1);
 
-            graphAngles.push(a);
-        }
+        graphAngles.push(a);
     });
     let totalAngle = 0;
     graphAngles.forEach(
@@ -282,14 +314,16 @@ function getMeanGraphAngle(data) {
             totalAngle += value;
         }
     )
+
     totalAngle /= graphAngles.length;
     /* console.log("Angulo médio do gráfico: " + totalAngle); */
     return totalAngle;
 }
 
+
 /* Remove o primeiro valor dos dados do gráfico */
 function removeLastDatasetData() {
-    if(chartAllDataMean.data.labels.length == 10){
+    if (chartAllDataMean.data.labels.length == 10) {
         for (let i = 0; i < 3; i++) {
             chartAllDataMean.data.labels.shift();
         }
@@ -299,7 +333,7 @@ function removeLastDatasetData() {
             }
         }
     }
-    
+
 }
 
 /* 
@@ -334,15 +368,15 @@ function selectMetric(metric, date, hour) {
 
     let metricElement = allData[date][hour][metric];
     let metricData = metricElement.allDataHour;
-    console.log(metricElement)
+
     Object.keys(metricData).reverse().forEach(
         (minuteData) => {
 
             chartSpecificData.data.labels.push(minuteData);
-            chartSpecificData.data.datasets[0].data.push(metricData[minuteData]);
+            chartSpecificData.data.datasets[0].data.push(parseFloat(metricData[minuteData].toFixed(1)));
             chartSpecificData.data.datasets[1].data.push(parseFloat((metricElement.math.mean - metricElement.math.standardDeviation).toFixed(1)));
             chartSpecificData.data.datasets[2].data.push(parseFloat((metricElement.math.mean + metricElement.math.standardDeviation).toFixed(1)));
-            chartSpecificData.data.datasets[3].data.push(metricElement.math.mean);
+            chartSpecificData.data.datasets[3].data.push(parseFloat(metricElement.math.mean.toFixed(1)));
         }
     )
 
@@ -381,11 +415,11 @@ function startPredictWithMl() {
 /* Faz a requisição e adiciona os valores no gráfico */
 async function createPredictWithMl() {
     let res = await fetch(`http://localhost:3000/npd/predictWithMl/${fkMaquina}&${fkEmpresa}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-            });
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
+    });
     let json = await res.json();
     alert.close();
     console.log(json);
@@ -397,29 +431,174 @@ async function createPredictWithMl() {
 
     appendPredictWithMlData(json);
 
-    removeLastDatasetData(); 
+    removeLastDatasetData();
     chartAllDataMean.update();
-    
+
 }
 
 function appendPredictWithMlData(json) {
     for (let metrica in json) {
-        let dataset = chartAllDataMean.data.datasets.filter(x => {return x.label == labelsTranslate[metrica]});
+        let dataset = chartAllDataMean.data.datasets.filter(x => { return x.label == labelsTranslate[metrica] });
 
         if (dataset.length > 0) {
             for (let data in json[metrica]) {
                 if (json[metrica][data] <= 0) dataset[0].data.push(0);
                 else dataset[0].data.push(json[metrica][data]);
-                
+
             }
         }
     }
     predictLock = true;
 }
 
-/* var mySlider = new rSlider({
-    target: '#sampleSlider',
-    values: [2008, 2009, 2010, 2011],
-    range: true // range slider
-}); */
+/* ------------------------------------------------------------------------------------- */
+class MyLm {
+    constructor() {
+        this.epoch = 1;
+        this.epochs = 1000;
 
+        this.angle = 0;
+        this.intercept = 0;
+        this.learningRate = 1.08;
+
+        this.lockAngle = false;
+        this.lockIntercept = false;
+        this.lastStd = 9007199254740991;
+        this.totalStd = 0;
+    }
+
+    train(xData, yData) {
+        for (this.epoch = 1; this.epoch <= this.epochs; this.epoch++) {
+            this.trainLinear(xData, yData);
+            /* this.printEpochInfo(); */
+        }
+        console.log("Terminei: Angulo: " + this.angle + " Intercept: " + this.intercept);
+    }
+    trainLinear(xData, yData) {
+        this.totalStd = getTotalStd(xData, yData, this.angle, this.intercept);
+
+        if (this.totalStd < 1) return false;
+        else {
+            let angleValue = 1;
+            if (yData[0] > yData[yData.length - 1]) angleValue = -1;
+
+            if (!this.lockAngle) {
+                this.angle += this.learningRate * angleValue;
+                this.totalStd = getTotalStd(xData, yData, this.angle, this.intercept);
+                if (this.lastStd < this.totalStd) {
+                    this.angle -= this.learningRate * angleValue;
+                    this.lockAngle = true;
+                }
+            }
+
+            if (!this.lockIntercept) {
+                this.intercept += this.learningRate;
+                this.totalStd = getTotalStd(xData, yData, this.angle, this.intercept);
+                if (this.lastStd < this.totalStd) {
+                    this.intercept -= this.learningRate;
+                    this.lockIntercept = true;
+                }
+            }
+            
+        }
+        this.lastStd = this.totalStd;
+        return true;
+        /* 142.05 */
+    }
+    
+    printEpochInfo() {
+        console.log(`
+            Epoch: ${this.epoch.toFixed(2)}
+            Angle: ${this.angle.toFixed(2)}
+            Intercept: ${this.intercept.toFixed(2)}
+            Total Std: ${this.totalStd.toFixed(2)}
+            Last Std: ${this.lastStd.toFixed(2)}
+            Last Std < Total Std: ${this.lastStd < this.totalStd}
+            Lock Angle: ${this.lockAngle}
+            Lock Intercept: ${this.lockIntercept}
+            ------------------------------------------------------------------------------------------
+        `)
+    }
+}
+
+function getTotalStd(xData, yData, angle, intercept) {
+    let totalStd = 0;
+    for (let i = 0; i < xData.length; i++) {
+        y= angle*xData[i] + intercept
+        let dataStd = Math.pow(yData[i] - y, 2);
+        dataStd = Math.sqrt(dataStd);
+        totalStd += dataStd;
+    }
+    return totalStd / xData.length;
+}
+
+function plotNewValues(angle, intercept, x, metrica) {
+    if (metrica =="disco_read_time" || metrica =="disco_write_time" || metrica == "cpu_Frequencia_Atual") return;
+    let datasetPos = findDataset(labelsTranslate[metrica]);
+
+    
+    let allY = [];
+
+    for (let i = 0; i < x.length; i++) {
+        let y = angle * x[i] + intercept
+        if (y < 0) y = 0;
+        chartAllDataMean.data.datasets[datasetPos].data.push(y);
+        allY.push(y);
+    }
+
+    chartAllDataMean.update();
+    return allY;
+}
+
+async function createPredict2() {
+    if (predictLock) return;
+    for (let i = 0; i < 5; i++) {
+        let nextDate = createNextDate();
+        chartAllDataMean.data.labels.push(nextDate);
+    }
+    let metricas = {};
+    for (let day in allData) {
+        for (let hour in allData[day]) {
+            for(let metrica in allData[day][hour]) {
+                if (metricas[metrica] == undefined) metricas[metrica] = [];
+                metricas[metrica].push(allData[day][hour][metrica].math.mean);
+            }
+        }
+    }
+    
+    let ramValues;
+    let myMl;
+    console.log(metricas);
+    for (let metrica in metricas) {
+        myMl = new MyLm();
+        
+        if (metrica == "cpu_Utilizacao") {
+            continue;
+        } else {
+            await myMl.train([... Array(metricas[metrica].length).keys()], metricas[metrica]);
+            if (metrica == "ram_Usada") {
+                ramValues = plotNewValues(myMl.angle, myMl.intercept, 
+                    [... Array(metricas[metrica].length + metricas[metrica].length + 2).keys()]
+                    .filter((x) => { return x > metricas[metrica].length; }), 
+                    metrica);
+            } else {
+                plotNewValues(myMl.angle, myMl.intercept, 
+                    [... Array(metricas[metrica].length + metricas[metrica].length + 2).keys()]
+                    .filter((x) => { return x > metricas[metrica].length; }), 
+                    metrica);
+            }
+        }
+
+        
+         
+    }
+    
+    myMl = new MyLm();
+    myMl.train(metricas["ram_Usada"], metricas["cpu_Utilizacao"]);
+    plotNewValues(myMl.angle, myMl.intercept, 
+        [... Array(metricas["cpu_Utilizacao"].length + metricas["cpu_Utilizacao"].length + 2).keys()]
+        .filter((x) => { return x > metricas["cpu_Utilizacao"].length; }), 
+        "cpu_Utilizacao");
+    predictLock = true;
+    
+}

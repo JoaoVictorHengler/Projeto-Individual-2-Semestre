@@ -1,23 +1,12 @@
 var dashModel = require("../models/newPageDashModel")
 var dashModel2 = require("../models/dashModel")
 
-async function getDados(req, res) {
-    let fkEmpresa = req.body.fkEmpresa;
-    let fkMaquina = req.body.fkMaquina;
-    let nomeMetrica = req.body.nomeMetrica;
+/* Método principal */
 
-    let maquinaInfo = await dashModel2.getMaquinaInfo(fkEmpresa, fkMaquina);
-    let response = await dashModel.getDados(maquinaInfo[0].nomeEmpresa, maquinaInfo[0].nomeMaquina, nomeMetrica);
-    res.json({ "metricas": response });
-}
-/* 
-   Tempo antigo: ~11s 
-   Tempo Novo: ~6.84s
-   Diferença de ~38% na velocidade
-*/
 async function getMeanHours(req, res, type = "get") {
     let inicio = new Date();
     console.log("Inicio: " + `${inicio.getHours()}:${inicio.getMinutes()}:${inicio.getSeconds()}`);
+
     let fkMaquina = req.params.fkMaquina;
     let fkEmpresa = req.params.fkEmpresa;
 
@@ -65,6 +54,7 @@ async function getMeanHours(req, res, type = "get") {
     }
 }
 
+/* Faz o predict através de um */
 async function predictWithMl(req, res) {
     let response = {};
 
@@ -75,17 +65,26 @@ async function predictWithMl(req, res) {
         for (let hour in data[date]) {
             for (let metrica in data[date][hour]) {
                 if (predictDataArray[metrica] == undefined) predictDataArray[metrica] = [];
-                predictDataArray[metrica].push([data[date][hour][metrica].math.mean]);
+                predictDataArray[metrica].push([data[date][hour][metrica].math.mean]);                
             }
         }
     }
 
-
+    
     for (let metrica in predictDataArray) {
+
         for (let i = 0; i < 5; i++) {
             /* console.log("Metrica: " + metrica); */
             if (response[metrica] == undefined) response[metrica] = [];
-            let predictResult = await dashModel.predictWithMl(predictDataArray[metrica], metrica);
+            let predictResult;
+            if (metrica == "cpu_Utilizacao") {
+                predictResult = await dashModel.predictWithMl(predictDataArray[metrica], predictDataArray["ram_Usada"]);
+            }
+            else if (metrica == "ram_Usada") {
+                predictResult = await dashModel.predictWithMl(predictDataArray[metrica], predictDataArray["cpu_Utilizacao"]);
+            } else {
+                predictResult = await dashModel.predictWithMl(predictDataArray[metrica]);
+            }
             response[metrica].push(predictResult[0]);
             predictDataArray[metrica].push(predictResult);
         }
@@ -95,7 +94,6 @@ async function predictWithMl(req, res) {
 }
 
 module.exports = {
-    getDados,
     getMeanHours,
     predictWithMl
 }
